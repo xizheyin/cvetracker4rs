@@ -8,10 +8,10 @@ use tokio::process::Command;
 use tokio::sync::Semaphore;
 use tracing::info;
 
-const MAX_DOWNLOAD_CONCURRENT: usize = 4; // 与 DependencyAnalyzer 保持一致
+const MAX_DOWNLOAD_CONCURRENT: usize = 4; // same as DependencyAnalyzer
                                           // static CARGO_UPDATE_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
-// 下载/解压限流
+// download/unzip limit
 static DOWNLOAD_SEMAPHORE: Lazy<Arc<Semaphore>> =
     Lazy::new(|| Arc::new(Semaphore::new(MAX_DOWNLOAD_CONCURRENT)));
 
@@ -20,14 +20,18 @@ pub struct Krate {
     name: String,
     version: String,
     dependents: Vec<Krate>,
+    /// the working directory of the crate. when analyzing a crate,
+    /// a copy of the crate will be created in the working directory
+    working_dir: PathBuf,
 }
 
 impl Krate {
-    pub fn new(name: &str, version: &str) -> Self {
+    pub fn new(name: &str, version: &str, working_dir: &PathBuf) -> Self {
         Self {
             name: name.to_owned(),
             version: version.to_owned(),
             dependents: Vec::new(),
+            working_dir: working_dir.to_owned(),
         }
     }
 
@@ -49,46 +53,47 @@ impl Krate {
         &mut self.dependents
     }
 
+    /// get the working directory and create it if it does not exist
+    pub(crate) async fn get_and_create_working_dir(&self) -> Result<PathBuf> {
+        if !self.working_dir.exists() {
+            tokio_fs::create_dir_all(&self.working_dir).await.unwrap();
+        }
+        Ok(self.working_dir.clone())
+    }
+
     /// obtain the download directory
     /// $DOWNLOAD_DIR/crate_name/ ,such as /home/rust/xinshi/download/crossbeam-channel/
-    fn get_download_dir(&self) -> PathBuf {
+    async fn get_download_crate_dir_path(&self) -> PathBuf {
         let base_dir = std::env::var("DOWNLOAD_DIR").unwrap_or_else(|_| "./downloads".to_string());
         Path::new(&base_dir).join(&self.name)
     }
 
     /// obtain the crate file path
     /// $DOWNLOAD_DIR/crate_name/crate_name-crate_version.crate
-    fn get_crate_file_path(&self) -> PathBuf {
+    async fn get_download_crate_file_path(&self) -> PathBuf {
         let crate_file = format!("{}-{}.crate", self.name, self.version);
-        self.get_download_dir().join(crate_file)
+        self.get_download_crate_dir_path().await.join(crate_file)
     }
 
     /// obtain the extract directory path
     /// $DOWNLOAD_DIR/crate_name/crate_name-crate_version/
-    fn get_extract_dir_path(&self) -> PathBuf {
+    async fn get_extract_crate_dir_path(&self) -> PathBuf {
         let extract_dir = format!("{}-{}", self.name, self.version);
-        self.get_download_dir().join(extract_dir)
+        self.get_download_crate_dir_path().await.join(extract_dir)
     }
 
     /// download the crate file
     async fn download(&self) -> Result<()> {
         info!("download crate: {} {}", self.name, self.version);
 
-        let download_dir = self.get_download_dir();
-        let crate_file_path = self.get_crate_file_path();
-        let extract_dir_path = self.get_extract_dir_path();
-
-        tracing::info!("crate_file_path: {}", crate_file_path.display());
-        tracing::info!("extract_dir_path: {}", extract_dir_path.display());
-        tracing::info!("download_dir: {}", download_dir.display());
+        let download_dir = self.get_download_crate_dir_path().await;
+        let crate_file_path = self.get_download_crate_file_path().await;
+        let extract_dir_path = self.get_extract_crate_dir_path().await;
 
         // check if the crate-version.crate file already exists
         // we don't need to download the crate file again
         if crate_file_path.exists() {
-            info!(
-                "directory {} already exists, skip the download",
-                extract_dir_path.display()
-            );
+            info!("{} exists, skip the download", extract_dir_path.display());
             return Ok(());
         }
 
@@ -100,7 +105,7 @@ impl Krate {
             ))?;
 
         // download the crate file
-        info!("downloading the crate file: {}", crate_file_path.display());
+        info!("Downloading the crate file: {}", crate_file_path.display());
         let download_url = format!(
             "https://crates.io/api/v1/crates/{}/{}/download",
             self.name, self.version
@@ -126,12 +131,10 @@ impl Krate {
             crate_file_path.display()
         ))?;
 
-        let size = metadata.len();
-        info!("the size of the downloaded file is {} bytes", size);
-
-        if size == 0 {
+        if metadata.len() == 0 {
             return Err(anyhow::anyhow!(
-                "the size of the downloaded file is 0, maybe the download failed"
+                "Failed to download: the size of {} is 0",
+                crate_file_path.display()
             ));
         }
 
@@ -139,14 +142,10 @@ impl Krate {
     }
 
     /// unzip the crate file
-    async fn unzip(&self) -> Result<PathBuf> {
-        let crate_file_path = self.get_crate_file_path();
-        let extract_dir_path = self.get_extract_dir_path();
-        let download_dir = self.get_download_dir();
-
-        tracing::info!("crate_file_path: {}", crate_file_path.display());
-        tracing::info!("extract_dir_path: {}", extract_dir_path.display());
-        tracing::info!("download_dir: {}", download_dir.display());
+    async fn unzip(&self) -> Result<()> {
+        let crate_file_path = self.get_download_crate_file_path().await;
+        let extract_dir_path = self.get_extract_crate_dir_path().await;
+        let download_dir = self.get_download_crate_dir_path().await;
 
         // if the target directory already exists, return directly
         if extract_dir_path.exists() {
@@ -154,7 +153,7 @@ impl Krate {
                 "directory {} already exists, no need to extract",
                 extract_dir_path.display()
             );
-            return Ok(extract_dir_path);
+            return Ok(());
         }
 
         // ensure the crate file exists
@@ -220,75 +219,53 @@ impl Krate {
             "Successfully extracted crate to: {}",
             extract_dir_path.display()
         );
-        Ok(extract_dir_path)
+        Ok(())
     }
 
     /// download and unzip the crate, return the path to the extracted directory
-    pub async fn get_crate_dir_path(&self) -> Result<PathBuf> {
-        let _download_permit = DOWNLOAD_SEMAPHORE.acquire().await.unwrap();
+    pub async fn fetch_and_unzip_crate(&self) -> Result<PathBuf> {
+        let extract_dir_path = self.get_extract_crate_dir_path().await;
 
-        let extract_dir_path = self.get_extract_dir_path();
-        let _key = format!("{}-{}", self.name, self.version);
-
-        tracing::info!(
-            "get_crate_dir_path: extract_dir_path={}",
-            extract_dir_path.display()
-        );
-
-        // 优先判断解压目录是否已存在
+        // check if the extract directory exists
         if extract_dir_path.exists() && extract_dir_path.is_dir() {
-            tracing::info!(
-                "get_crate_dir_path: 解压目录已存在: {}",
+            info!(
+                "{} exists, skip the download and unzip",
                 extract_dir_path.display()
             );
             return Ok(extract_dir_path);
         }
 
-        // 下面的代码只有第一个任务能执行
+        // if the extract directory does not exist, download and unzip the crate
         let result = async {
-            tracing::info!("get_crate_dir_path: 解压目录不存在，准备下载和解压");
+            tracing::info!("get_crate_dir_path: extract directory does not exist, prepare to download and unzip");
 
             if let Err(e) = self.download().await {
-                tracing::warn!(
-                    "get_crate_dir_path: download()失败: {}，crate_file_path={}",
-                    e,
-                    self.get_crate_file_path().display()
-                );
-                return Err(anyhow::anyhow!("download()失败: {}", e));
-            } else {
-                tracing::info!("get_crate_dir_path: download()成功");
+                tracing::warn!("Failed to download the crate: {}", e);
+                return Err(anyhow::anyhow!("download() failed: {}", e));
             }
 
-            let unzip_path = match self.unzip().await {
-                Ok(path) => {
-                    tracing::info!("get_crate_dir_path: unzip() 成功，解压到: {}", path.display());
-                    path
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        "get_crate_dir_path: unzip() 失败: {}，crate_file_path={}, extract_dir_path={}",
-                        e,
-                        self.get_crate_file_path().display(),
-                        extract_dir_path.display()
-                    );
-                    return Err(anyhow::anyhow!("unzip() 失败: {}", e));
-                }
-            };
-
-            // 检查解压目录
-            if !unzip_path.is_dir() || unzip_path.read_dir().is_err() {
+            if let Err(e) = self.unzip().await {
                 tracing::warn!(
-                    "get_crate_dir_path: 解压目录不是有效目录: {}",
-                    unzip_path.display()
+                    "Failed to unzip the crate {}: {e}",
+                    extract_dir_path.display()
+                );
+                return Err(anyhow::anyhow!("unzip() failed: {}", e));
+            }
+
+            // check if the unzip directory is valid
+            if !extract_dir_path.is_dir() || extract_dir_path.read_dir().is_err() {
+                tracing::warn!(
+                    "get_crate_dir_path: the unzip directory is not valid: {}",
+                    extract_dir_path.display()
                 );
                 return Err(anyhow::anyhow!(
                     "the unzip path is not a directory: {}",
-                    unzip_path.display()
+                    extract_dir_path.display()
                 ));
             }
 
-            tracing::info!("get_crate_dir_path: 返回解压目录: {}", unzip_path.display());
-            Ok(unzip_path)
+            tracing::info!("get_crate_dir_path: return the unzip directory: {}", extract_dir_path.display());
+            Ok(extract_dir_path)
         }.await;
 
         result
@@ -296,7 +273,7 @@ impl Krate {
 
     /// cleanup the downloaded crate file, keep the extracted directory
     pub async fn cleanup_crate_file(&self) -> Result<()> {
-        let crate_file_path = self.get_crate_file_path();
+        let crate_file_path = self.get_download_crate_file_path().await;
 
         if crate_file_path.exists() {
             tokio_fs::remove_file(&crate_file_path)
@@ -311,7 +288,32 @@ impl Krate {
         Ok(())
     }
 
-    /// 修改目标 crate 的 Cargo.toml，将父节点依赖锁定为指定版本
+    /// execute cargo clean in the crate extract directory, release the target space
+    pub async fn cargo_clean(&self) -> Result<()> {
+        let extract_dir = self.get_extract_crate_dir_path().await;
+        let manifest_path = extract_dir.join("Cargo.toml");
+        if !manifest_path.exists() {
+            tracing::warn!("cargo_clean: {} 不存在，跳过", manifest_path.display());
+            return Ok(());
+        }
+        tracing::info!("cargo_clean: {}", manifest_path.display());
+        let output = Command::new("cargo")
+            .args(&["clean", "--manifest-path", &manifest_path.to_string_lossy()])
+            .current_dir(&extract_dir)
+            .output()
+            .await
+            .context(format!(
+                "执行 cargo clean 失败: {}",
+                manifest_path.display()
+            ))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::warn!("cargo clean 执行失败: {}", stderr);
+        }
+        Ok(())
+    }
+
+    /// patch the target crate's Cargo.toml, lock the parent dependency to the specified version
     pub async fn patch_cargo_toml_with_parent(
         crate_dir: &Path,
         parent_name: &str,
@@ -365,31 +367,6 @@ impl Krate {
             tracing::info!("cargo update --precise 执行成功");
         }
         Ok(original_content)
-    }
-
-    /// 在 crate 解压目录下执行 cargo clean，释放 target 空间
-    pub async fn cargo_clean(&self) -> Result<()> {
-        let extract_dir = self.get_extract_dir_path();
-        let manifest_path = extract_dir.join("Cargo.toml");
-        if !manifest_path.exists() {
-            tracing::warn!("cargo_clean: {} 不存在，跳过", manifest_path.display());
-            return Ok(());
-        }
-        tracing::info!("cargo_clean: {}", manifest_path.display());
-        let output = Command::new("cargo")
-            .args(&["clean", "--manifest-path", &manifest_path.to_string_lossy()])
-            .current_dir(&extract_dir)
-            .output()
-            .await
-            .context(format!(
-                "执行 cargo clean 失败: {}",
-                manifest_path.display()
-            ))?;
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            tracing::warn!("cargo clean 执行失败: {}", stderr);
-        }
-        Ok(())
     }
 }
 

@@ -41,42 +41,6 @@ impl DependencyAnalyzer {
         })
     }
 
-    /// 从给定的版本列表中选择最老和最新的版本
-    fn select_oldest_and_newest_versions(
-        &self,
-        versions: Vec<semver::Version>,
-    ) -> (
-        Option<(usize, semver::Version)>,
-        Option<(usize, semver::Version)>,
-    ) {
-        if versions.is_empty() {
-            return (None, None);
-        }
-        let mut versions_with_index = versions.into_iter().enumerate().collect::<Vec<_>>();
-
-        versions_with_index.sort_by(|a, b| a.1.cmp(&b.1));
-
-        let mut result = (None, None);
-
-        if let Some(oldest) = versions_with_index.first() {
-            result.0 = Some(oldest.clone());
-        }
-
-        if versions_with_index.len() > 1 {
-            if let Some(newest) = versions_with_index.last() {
-                result.1 = Some(newest.clone());
-            }
-        }
-
-        tracing::info!(
-            "oldest version: {:?}, newest version: {:?}",
-            result.0,
-            result.1
-        );
-
-        result
-    }
-
     pub async fn analyze(
         &self,
         crate_name: &str,
@@ -117,7 +81,7 @@ impl DependencyAnalyzer {
 
         let bfs_queue = vec![oldest_version, newest_version]
             .into_iter()
-            .filter_map(|version| Some(Krate::new(crate_name, &version?.1.to_string())))
+            .filter_map(|version| Some(Krate::new(crate_name, &version?.1.to_string(), todo!())))
             .collect::<VecDeque<_>>();
 
         self.bfs_from_queue(bfs_queue, function_path).await?;
@@ -310,8 +274,8 @@ impl DependencyAnalyzer {
                     );
                     async move {
                         let _permit = analyzer.semaphore.acquire().await.unwrap();
-                        let dep_krate = Krate::new(&reverse_name, &reverse_version);
-                        let dep_dir = match dep_krate.get_crate_dir_path().await {
+                        let dep_krate = Krate::new(&reverse_name, &reverse_version, todo!());
+                        let dep_dir = match dep_krate.fetch_and_unzip_crate().await {
                             Ok(dir) => dir,
                             Err(e) => {
                                 tracing::warn!(
@@ -456,7 +420,7 @@ impl DependencyAnalyzer {
         //     crate_name, crate_version, function_path
         // );
 
-        let krate = Krate::new(crate_name, crate_version);
+        let krate = Krate::new(crate_name, crate_version, todo!());
         let original_dir = self.get_original_dir();
 
         // 准备分析环境
@@ -501,7 +465,7 @@ impl DependencyAnalyzer {
         // info!("准备分析环境: {} {}", krate.name(), krate.version());
 
         // 下载并解压crate（已自动判断是否已存在）
-        let crate_dir = krate.get_crate_dir_path().await.context(format!(
+        let crate_dir = krate.fetch_and_unzip_crate().await.context(format!(
             "无法下载或解压 crate: {} {}",
             krate.name(),
             krate.version()
@@ -645,7 +609,7 @@ impl DependencyAnalyzer {
         Ok(())
     }
 
-    // 清理环境并返回结果
+    // clean the environment and return the result
     async fn cleanup_and_return_result(
         &self,
         krate: &Krate,
@@ -653,9 +617,9 @@ impl DependencyAnalyzer {
         _original_dir: &PathBuf,
         analysis_result: Result<Option<String>>,
     ) -> Option<String> {
-        // 只清理下载的 .crate 压缩包，不删除解压后的项目文件夹
+        // only clean the .crate file, keep the extracted directory
         let _ = krate.cleanup_crate_file().await;
-        // 分析后自动 cargo clean，释放 target 空间
+        // clean the target directory after analysis
         let _ = krate.cargo_clean().await;
 
         match analysis_result {
@@ -718,5 +682,40 @@ impl DependencyAnalyzer {
             }
         }
         Ok(false)
+    }
+
+    fn select_oldest_and_newest_versions(
+        &self,
+        versions: Vec<semver::Version>,
+    ) -> (
+        Option<(usize, semver::Version)>,
+        Option<(usize, semver::Version)>,
+    ) {
+        if versions.is_empty() {
+            return (None, None);
+        }
+        let mut versions_with_index = versions.into_iter().enumerate().collect::<Vec<_>>();
+
+        versions_with_index.sort_by(|a, b| a.1.cmp(&b.1));
+
+        let mut result = (None, None);
+
+        if let Some(oldest) = versions_with_index.first() {
+            result.0 = Some(oldest.clone());
+        }
+
+        if versions_with_index.len() > 1 {
+            if let Some(newest) = versions_with_index.last() {
+                result.1 = Some(newest.clone());
+            }
+        }
+
+        tracing::info!(
+            "oldest version: {:?}, newest version: {:?}",
+            result.0,
+            result.1
+        );
+
+        result
     }
 }
