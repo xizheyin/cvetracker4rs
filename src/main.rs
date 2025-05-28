@@ -1,8 +1,9 @@
 mod database;
 mod dependency_analyzer;
+mod dir;
 mod logger;
 mod model;
-mod dir;
+mod utils;
 
 use dependency_analyzer::DependencyAnalyzer;
 use std::fs;
@@ -10,6 +11,7 @@ use std::path::Path;
 
 #[tokio::main]
 async fn main() {
+    let cve_id = "CVE-2025-2022";
     let crate_name = "openssl";
     let version_range = ">=0.10.39, <0.10.72";
     let target_function_path = "openssl::cipher::Cipher::fetch";
@@ -22,9 +24,9 @@ async fn main() {
     }
 
     tracing::info!("开始分析依赖关系");
-    let analyzer = DependencyAnalyzer::new().await.unwrap();
+    let mut analyzer = DependencyAnalyzer::new().await.unwrap();
     analyzer
-        .analyze(crate_name, version_range, target_function_path)
+        .analyze(cve_id, crate_name, version_range, target_function_path)
         .await
         .unwrap();
 

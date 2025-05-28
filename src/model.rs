@@ -6,7 +6,9 @@ use std::sync::Arc;
 use tokio::fs as tokio_fs;
 use tokio::process::Command;
 use tokio::sync::Semaphore;
-use tracing::info;
+use tracing::{info, warn};
+
+use crate::dir::CrateWorkspaceFileSystemManager;
 
 const MAX_DOWNLOAD_CONCURRENT: usize = 4; // same as DependencyAnalyzer
                                           // static CARGO_UPDATE_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -26,13 +28,22 @@ pub struct Krate {
 }
 
 impl Krate {
-    pub fn new(name: &str, version: &str, working_dir: &PathBuf) -> Self {
-        Self {
+    pub async fn create(
+        name: &str,
+        version: &str,
+        parent_index: usize,
+        fs_manager: &mut CrateWorkspaceFileSystemManager,
+    ) -> Result<Self> {
+        let (_crate_workspace_index, version_dir_index) = fs_manager
+            .create_krate_working_dir(parent_index, name, version)
+            .await?;
+        let working_dir = fs_manager.get_krate_working_dir(version_dir_index).unwrap();
+        Ok(Self {
             name: name.to_owned(),
             version: version.to_owned(),
             dependents: Vec::new(),
-            working_dir: working_dir.to_owned(),
-        }
+            working_dir,
+        })
     }
 
     pub fn name(&self) -> String {

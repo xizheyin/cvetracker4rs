@@ -1,10 +1,10 @@
+use futures::stream::{self, StreamExt};
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 use anyhow::{Context, Result};
-use futures::{stream, StreamExt};
 use semver::{Version, VersionReq};
 use tokio::fs as tokio_fs;
 use tokio::process::Command;
@@ -12,8 +12,9 @@ use tokio::time::{timeout, Duration};
 use tracing::{info, warn};
 
 use crate::database::Database;
-use crate::dir::CrateWorkspaceManager;
+use crate::dir::CrateWorkspaceFileSystemManager;
 use crate::model::{Krate, ReverseDependency};
+use crate::utils::select_two_end_versions_by_version_range;
 
 const MAX_CONCURRENT_TASKS: usize = 6;
 const BATCH_SIZE: usize = 100;
@@ -27,7 +28,7 @@ pub struct VisitedCrateVersion {
 #[derive(Debug, Clone)]
 pub struct DependencyAnalyzer {
     database: Arc<Database>,
-    crate_workspace_manager: Arc<CrateWorkspaceManager>,
+    fs_manager: CrateWorkspaceFileSystemManager,
     semaphore: Arc<Semaphore>,
 }
 
@@ -36,54 +37,40 @@ impl DependencyAnalyzer {
         let database = Database::new().await?;
         Ok(Self {
             database: Arc::new(database),
-            crate_workspace_manager: Arc::new(CrateWorkspaceManager::new()),
+            fs_manager: CrateWorkspaceFileSystemManager::new(),
             semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_TASKS)),
         })
     }
 
     pub async fn analyze(
-        &self,
+        &mut self,
+        cve_id: &str,
         crate_name: &str,
         version_range: &str,
         function_path: &str,
     ) -> Result<()> {
-        let version_req = self.parse_version_requirement(version_range).unwrap();
-        let versions = self.database.query_crate_versions(crate_name).await?;
+        let root_workspace_index = self.fs_manager.create_root(cve_id, crate_name).await?;
 
-        tracing::info!(
-            "Start analyzing crate: {}, version range: {}, {} versions",
-            crate_name,
-            version_req,
-            versions.len()
-        );
+        // select oldest and newest versions that match the version range
+        let two_end_versions: Vec<(usize, Version)> =
+            crate::utils::select_two_end_versions_by_version_range(
+                self.database.query_crate_versions(crate_name).await?,
+                version_range,
+            )
+            .await;
 
-        // 筛选符合版本要求的版本
-        let matched_versions = versions
-            .into_iter()
-            .filter_map(|version| {
-                let parsed_version = Version::parse(&version).ok()?;
-                version_req
-                    .matches(&parsed_version)
-                    .then_some(parsed_version)
-            })
-            .collect::<Vec<_>>();
-
-        tracing::info!("找到符合版本要求的版本数: {}", matched_versions.len());
-
-        // 只取最老和最新的版本（排序已在方法内部完成）
-        let (oldest_version, newest_version) =
-            self.select_oldest_and_newest_versions(matched_versions);
-
-        if oldest_version.is_none() && newest_version.is_none() {
-            tracing::info!("没有找到符合版本要求的版本");
-            return Ok(());
+        let mut bfs_queue = VecDeque::new();
+        for (_, version) in two_end_versions {
+            bfs_queue.push_back(
+                Krate::create(
+                    crate_name,
+                    &version.to_string(),
+                    root_workspace_index,
+                    &mut self.fs_manager,
+                )
+                .await?,
+            );
         }
-
-        let bfs_queue = vec![oldest_version, newest_version]
-            .into_iter()
-            .filter_map(|version| Some(Krate::new(crate_name, &version?.1.to_string(), todo!())))
-            .collect::<VecDeque<_>>();
-
         self.bfs_from_queue(bfs_queue, function_path).await?;
 
         Ok(())
@@ -219,22 +206,18 @@ impl DependencyAnalyzer {
             let versions_count = versions.len();
             total_versions += versions_count;
 
-            let selected = self.select_oldest_and_newest_versions(
+            let selected: Vec<(usize, Version)> = select_two_end_versions_by_version_range(
                 versions
                     .iter()
-                    .map(|(version, _)| version.clone())
+                    .map(|(version, _)| version.to_string())
                     .collect(),
-            );
+                ">=0.0.0",
+            )
+            .await;
 
-            let selected_reverse_dependencies = vec![selected.0, selected.1]
+            let selected_reverse_dependencies = selected
                 .into_iter()
-                .filter_map(|x| {
-                    if let Some((idx, _)) = x {
-                        Some(versions[idx].1.clone())
-                    } else {
-                        None
-                    }
-                })
+                .map(|(idx, version)| versions[idx].1.clone())
                 .collect::<Vec<_>>();
 
             selected_dependents.extend(selected_reverse_dependencies);
@@ -274,7 +257,7 @@ impl DependencyAnalyzer {
                     );
                     async move {
                         let _permit = analyzer.semaphore.acquire().await.unwrap();
-                        let dep_krate = Krate::new(&reverse_name, &reverse_version, todo!());
+                        let dep_krate = Krate::create(&reverse_name, &reverse_version, todo!(), &mut self.fs_manager).await.ok()?;
                         let dep_dir = match dep_krate.fetch_and_unzip_crate().await {
                             Ok(dir) => dir,
                             Err(e) => {
@@ -420,7 +403,7 @@ impl DependencyAnalyzer {
         //     crate_name, crate_version, function_path
         // );
 
-        let krate = Krate::new(crate_name, crate_version, todo!());
+        let krate = Krate::create(crate_name, crate_version, todo!(), &mut self.fs_manager).await.ok()?;
         let original_dir = self.get_original_dir();
 
         // 准备分析环境
@@ -647,11 +630,6 @@ impl DependencyAnalyzer {
         }
     }
 
-    // 解析版本要求
-    pub fn parse_version_requirement(&self, version_range: &str) -> Result<VersionReq> {
-        VersionReq::parse(version_range).map_err(|e| anyhow::anyhow!("解析版本范围失败: {}", e))
-    }
-
     // 检查依赖者是否有效（版本匹配且调用了目标函数）
     async fn is_valid_dependent(
         &self,
@@ -682,40 +660,5 @@ impl DependencyAnalyzer {
             }
         }
         Ok(false)
-    }
-
-    fn select_oldest_and_newest_versions(
-        &self,
-        versions: Vec<semver::Version>,
-    ) -> (
-        Option<(usize, semver::Version)>,
-        Option<(usize, semver::Version)>,
-    ) {
-        if versions.is_empty() {
-            return (None, None);
-        }
-        let mut versions_with_index = versions.into_iter().enumerate().collect::<Vec<_>>();
-
-        versions_with_index.sort_by(|a, b| a.1.cmp(&b.1));
-
-        let mut result = (None, None);
-
-        if let Some(oldest) = versions_with_index.first() {
-            result.0 = Some(oldest.clone());
-        }
-
-        if versions_with_index.len() > 1 {
-            if let Some(newest) = versions_with_index.last() {
-                result.1 = Some(newest.clone());
-            }
-        }
-
-        tracing::info!(
-            "oldest version: {:?}, newest version: {:?}",
-            result.0,
-            result.1
-        );
-
-        result
     }
 }
