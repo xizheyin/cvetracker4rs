@@ -14,9 +14,9 @@ use tracing::{info, warn};
 use crate::database::Database;
 use crate::dir::CrateWorkspaceFileSystemManager;
 use crate::model::{Krate, ReverseDependency};
-use crate::utils::select_two_end_versions_by_version_range;
+use crate::utils;
 
-const MAX_CONCURRENT_TASKS: usize = 6;
+const MAX_CONCURRENT_TASKS: usize = 8;
 const BATCH_SIZE: usize = 100;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -49,120 +49,59 @@ impl DependencyAnalyzer {
         version_range: &str,
         function_path: &str,
     ) -> Result<()> {
-        let root_workspace_index = self.fs_manager.create_root(cve_id, crate_name).await?;
-
+        let root_idx = self.fs_manager.create_root(cve_id, crate_name).await?;
+        let versions = self.database.query_crate_versions(crate_name).await?;
         // select oldest and newest versions that match the version range
         let two_end_versions: Vec<(usize, Version)> =
-            crate::utils::select_two_end_versions_by_version_range(
-                self.database.query_crate_versions(crate_name).await?,
-                version_range,
-            )
-            .await;
+            crate::utils::select_two_end_vers(versions, version_range).await;
 
         let mut bfs_queue = VecDeque::new();
         for (_, version) in two_end_versions {
-            bfs_queue.push_back(
-                Krate::create(
-                    crate_name,
-                    &version.to_string(),
-                    root_workspace_index,
-                    &mut self.fs_manager,
-                )
-                .await?,
-            );
+            let ver_str = &version.to_string();
+            let krate = Krate::create(crate_name, ver_str, root_idx, &mut self.fs_manager).await?;
+            bfs_queue.push_back(krate);
         }
-        self.bfs_from_queue(bfs_queue, function_path).await?;
+        self.bfs(bfs_queue, function_path).await?;
 
         Ok(())
     }
 
-    async fn bfs_from_queue(
-        &self,
-        mut queue: VecDeque<Krate>,
-        target_function_path: &str,
-    ) -> Result<()> {
-        tracing::info!("bfs queue size: {}", queue.len());
-
-        let mut visited = HashSet::new();
-        let mut level = 0;
-
-        // pop current level
-        let pop_bfs_level = |queue: &mut VecDeque<Krate>| -> Vec<Krate> {
-            let mut current_level = Vec::new();
-            while let Some(node) = queue.pop_front() {
-                current_level.push(node);
-            }
-            tracing::info!("BFS弹出一层，共 {} 个节点", current_level.len());
-            current_level
-        };
-
-        // push next level
-        let push_next_level = |queue: &mut VecDeque<Krate>, next_nodes: Vec<Krate>| {
-            let count = next_nodes.len();
-            for node in next_nodes {
-                queue.push_back(node);
-            }
-            tracing::info!("BFS推入下一层，共 {} 个节点", count);
-        };
-
+    async fn bfs(&self, mut queue: VecDeque<Krate>, target_function_path: &str) -> Result<()> {
         // main loop of BFS Algorithm
         while !queue.is_empty() {
-            level += 1;
-            tracing::info!("BFS第{}层，队列长度:{}", level, queue.len());
-            let current_level = pop_bfs_level(&mut queue);
+            let current_level = utils::pop_bfs_level(&mut queue).await;
             let results = self
-                .process_bfs_level(current_level, target_function_path, &mut visited)
+                .process_bfs_level(current_level, target_function_path)
                 .await?;
-            push_next_level(&mut queue, results);
+            utils::push_next_level(&mut queue, results).await;
         }
         Ok(())
     }
 
+    /// process a level of BFS
     async fn process_bfs_level(
         &self,
         current_level: Vec<Krate>,
         target_function_path: &str,
-        visited: &mut HashSet<VisitedCrateVersion>,
     ) -> Result<Vec<Krate>> {
-        let analyzer = Arc::new(self.clone());
-        let results = stream::iter(current_level)
-            .map(|krate| {
-                let analyzer = Arc::clone(&analyzer);
-                let target_function_path = target_function_path.to_string();
-                async move {
-                    let _permit = analyzer.semaphore.acquire().await.unwrap();
-                    analyzer
-                        .process_single_bfs_node(krate, &target_function_path)
-                        .await
-                }
+        //let analyzer = Arc::new(self);
+        Ok(stream::iter(current_level)
+            .map(async |krate| {
+                self.process_single_bfs_node(&krate, &target_function_path)
+                    .await
             })
             .buffer_unordered(MAX_CONCURRENT_TASKS) // 使用常量
             .collect::<Vec<_>>()
-            .await;
-
-        let mut next_nodes = Vec::new();
-        let mut total_new = 0;
-        for result in results {
-            if let Ok(nodes) = result {
-                total_new += nodes.len();
-                for node in nodes {
-                    let cv = VisitedCrateVersion {
-                        name: node.name().to_string(),
-                        version: node.version().to_string(),
-                    };
-                    if visited.insert(cv) {
-                        next_nodes.push(node);
-                    }
-                }
-            }
-        }
-        tracing::info!("process_bfs_level: 本层发现新节点:{}", total_new);
-        Ok(next_nodes)
+            .await
+            .into_iter()
+            .flatten()
+            .flatten()
+            .collect::<Vec<_>>())
     }
 
     async fn process_single_bfs_node(
         &self,
-        krate: Krate,
+        krate: &Krate,
         target_function_path: &str,
     ) -> Result<Vec<Krate>> {
         let node_start_time = std::time::Instant::now();
@@ -206,7 +145,7 @@ impl DependencyAnalyzer {
             let versions_count = versions.len();
             total_versions += versions_count;
 
-            let selected: Vec<(usize, Version)> = select_two_end_versions_by_version_range(
+            let selected: Vec<(usize, Version)> = utils::select_two_end_vers(
                 versions
                     .iter()
                     .map(|(version, _)| version.to_string())
@@ -257,7 +196,14 @@ impl DependencyAnalyzer {
                     );
                     async move {
                         let _permit = analyzer.semaphore.acquire().await.unwrap();
-                        let dep_krate = Krate::create(&reverse_name, &reverse_version, todo!(), &mut self.fs_manager).await.ok()?;
+                        let dep_krate = Krate::create(
+                            &reverse_name,
+                            &reverse_version,
+                            todo!(),
+                            &mut self.fs_manager,
+                        )
+                        .await
+                        .ok()?;
                         let dep_dir = match dep_krate.fetch_and_unzip_crate().await {
                             Ok(dir) => dir,
                             Err(e) => {
@@ -398,12 +344,9 @@ impl DependencyAnalyzer {
         crate_version: &str,
         function_path: &str,
     ) -> Option<String> {
-        // info!(
-        //     "开始分析 crate {} {} 的函数调用: {}",
-        //     crate_name, crate_version, function_path
-        // );
-
-        let krate = Krate::create(crate_name, crate_version, todo!(), &mut self.fs_manager).await.ok()?;
+        let krate = Krate::create(crate_name, crate_version, todo!(), &mut self.fs_manager)
+            .await
+            .ok()?;
         let original_dir = self.get_original_dir();
 
         // 准备分析环境

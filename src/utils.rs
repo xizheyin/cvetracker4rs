@@ -1,6 +1,8 @@
+use std::collections::VecDeque;
+
 use semver::{Version, VersionReq};
 
-pub(crate) async fn select_two_end_versions_by_version_range(
+pub(crate) async fn select_two_end_vers(
     versions: Vec<String>,
     version_range: &str,
 ) -> Vec<(usize, semver::Version)> {
@@ -61,4 +63,16 @@ async fn select_oldest_and_newest_versions(
     );
 
     result
+}
+
+pub(crate) async fn pop_bfs_level<T>(queue: &mut VecDeque<T>) -> Vec<T> {
+    let current_level: Vec<_> = queue.drain(..).collect();
+    tracing::info!("BFS弹出一层，共 {} 个节点", current_level.len());
+    current_level
+}
+
+pub(crate) async fn push_next_level<T>(queue: &mut VecDeque<T>, next_nodes: Vec<T>) {
+    let count = next_nodes.len();
+    queue.extend(next_nodes);
+    tracing::info!("BFS推入下一层，共 {} 个节点", count);
 }
