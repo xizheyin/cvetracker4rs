@@ -104,34 +104,26 @@ impl DependencyAnalyzer {
         krate: &Krate,
         target_function_path: &str,
     ) -> Result<Vec<Krate>> {
-        let node_start_time = std::time::Instant::now();
-        tracing::info!("准备查询依赖者: {} {}", krate.name(), krate.version());
         let precise_version = &krate.version();
 
-        let reverse_dependencies = self.database.query_dependents(&krate.name()).await?;
-        let reverse_dependencies_for_certain_version =
-            Self::filter_dependents_by_version_req(reverse_dependencies, precise_version);
+        let reverse_deps = self.database.query_dependents(&krate.name()).await?;
+        let reverse_deps_for_certain_version =
+            utils::filter_dependents_by_version_req(reverse_deps, precise_version).await?;
 
-        let krate = Arc::new(krate); // 用 Arc 包裹
-        tracing::info!(
-            "query_dependents 返回 for {} {}",
-            krate.name(),
-            krate.version()
-        );
+        let krate = Arc::new(krate);
 
-        // 对每个crate名称的不同版本只选择最老和最新的
-        let mut dependents_by_name: std::collections::HashMap<
+        let mut dependents_map: std::collections::HashMap<
             String,
             Vec<(Version, ReverseDependency)>,
         > = std::collections::HashMap::new();
 
         // 按crate名称分组并解析版本
-        for dep in reverse_dependencies_for_certain_version {
-            if let Ok(version) = Version::parse(&dep.version) {
-                dependents_by_name
-                    .entry(dep.name.clone())
+        for revdep in reverse_deps_for_certain_version {
+            if let Ok(version) = Version::parse(&revdep.version) {
+                dependents_map
+                    .entry(revdep.name.clone())
                     .or_insert_with(Vec::new)
-                    .push((version, dep));
+                    .push((version, revdep));
             }
         }
 
@@ -140,34 +132,21 @@ impl DependencyAnalyzer {
         let mut total_crates = 0;
         let mut total_versions = 0;
 
-        for (name, versions) in dependents_by_name {
-            total_crates += 1;
-            let versions_count = versions.len();
-            total_versions += versions_count;
+        for (name, revdeps) in dependents_map {
+            let versions = revdeps
+                .iter()
+                .map(|(version, _)| version.to_string())
+                .collect::<Vec<_>>();
+            let selected: Vec<(usize, Version)> =
+                utils::select_two_end_vers(versions, ">=0.0.0").await;
 
-            let selected: Vec<(usize, Version)> = utils::select_two_end_vers(
-                versions
-                    .iter()
-                    .map(|(version, _)| version.to_string())
-                    .collect(),
-                ">=0.0.0",
-            )
-            .await;
-
-            let selected_reverse_dependencies = selected
+            let selected = selected
                 .into_iter()
-                .map(|(idx, version)| versions[idx].1.clone())
+                .map(|(idx, _)| revdeps[idx].1.clone())
                 .collect::<Vec<_>>();
 
-            selected_dependents.extend(selected_reverse_dependencies);
+            selected_dependents.extend(selected);
         }
-
-        let selected_dependents_count = selected_dependents.len();
-        tracing::info!(
-            "共有{}个crate依赖，筛选后剩余{}个版本进行分析",
-            total_crates,
-            selected_dependents_count
-        );
 
         let mut next_nodes = Vec::new();
         let mut total_progress_idx = 0;
@@ -304,33 +283,6 @@ impl DependencyAnalyzer {
         }
 
         Ok(next_nodes)
-    }
-
-    /// filter reverse dependents by version requirement
-    fn filter_dependents_by_version_req(
-        dependents: Vec<ReverseDependency>,
-        precise_version: &str,
-    ) -> Vec<ReverseDependency> {
-        let precise_version_parsed = semver::Version::parse(precise_version).ok();
-        let filtered_dependents: Vec<ReverseDependency> = dependents
-            .into_iter()
-            .filter(|dep| {
-                if let (Some(ver), Ok(dep_req)) = (
-                    precise_version_parsed.as_ref(),
-                    semver::VersionReq::parse(&dep.req),
-                ) {
-                    dep_req.matches(ver)
-                } else {
-                    false
-                }
-            })
-            .collect();
-
-        tracing::info!(
-            "filter reverse dependents by version requirement, got {} dependents",
-            filtered_dependents.len()
-        );
-        filtered_dependents
     }
 
     fn get_original_dir(&self) -> PathBuf {

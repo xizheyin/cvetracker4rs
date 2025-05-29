@@ -2,6 +2,23 @@ use std::collections::VecDeque;
 
 use semver::{Version, VersionReq};
 
+use crate::model::ReverseDependency;
+
+pub(crate) async fn filter_dependents_by_version_req(
+    dependents: Vec<ReverseDependency>,
+    precise_version: &str,
+) -> anyhow::Result<Vec<ReverseDependency>> {
+    let precise_version = semver::Version::parse(precise_version)?;
+    Ok(dependents
+        .into_iter()
+        .filter(|dep| {
+            semver::VersionReq::parse(dep.req.as_str())
+                .map(|req| req.matches(&precise_version))
+                .unwrap_or(false)
+        })
+        .collect())
+}
+
 pub(crate) async fn select_two_end_vers(
     versions: Vec<String>,
     version_range: &str,
