@@ -10,7 +10,7 @@ use std::fs;
 use std::path::Path;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cve_id = "CVE-2025-2022";
     let crate_name = "openssl";
     let version_range = ">=0.10.39, <0.10.72";
@@ -20,15 +20,15 @@ async fn main() {
     dotenv::dotenv().ok();
     let _guard = logger::log_init();
     if log_file_path.exists() {
-        fs::remove_file(log_file_path).expect("无法删除旧日志文件");
+        fs::remove_file(log_file_path)?;
     }
 
     tracing::info!("开始分析依赖关系");
-    let mut analyzer = DependencyAnalyzer::new().await.unwrap();
+    let analyzer = DependencyAnalyzer::new().await?;
     analyzer
         .analyze(cve_id, crate_name, version_range, target_function_path)
-        .await
-        .unwrap();
+        .await?;
 
     tracing::info!("分析完成");
+    Ok(())
 }

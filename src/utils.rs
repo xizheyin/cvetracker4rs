@@ -1,6 +1,9 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, path::Path};
 
+use anyhow::Context;
 use semver::{Version, VersionReq};
+use tokio::fs as tokio_fs;
+use toml_edit::{value, DocumentMut};
 
 use crate::model::ReverseDependency;
 
@@ -92,4 +95,68 @@ pub(crate) async fn push_next_level<T>(queue: &mut VecDeque<T>, next_nodes: Vec<
     let count = next_nodes.len();
     queue.extend(next_nodes);
     tracing::info!("BFS推入下一层，共 {} 个节点", count);
+}
+
+/// patch the target crate's Cargo.toml, lock the parent dependency to the specified version
+pub async fn patch_dep(
+    crate_dir: &Path,
+    dep_name: &str,
+    dep_version: &str,
+) -> anyhow::Result<String> {
+    let cargo_toml_path = crate_dir.join("Cargo.toml");
+    let original_content = tokio_fs::read_to_string(&cargo_toml_path).await?;
+
+    let mut doc = original_content
+        .parse::<DocumentMut>()
+        .context("Failed to parse Cargo.toml")?;
+
+    let version_str = format!("={}", dep_version);
+
+    // set the dependency with comment
+    let set_dep_with_comment = |table: &mut toml_edit::Table, key: &str, new_version: &str| {
+        let old_version = table
+            .get(key)
+            .and_then(|item| item.as_value())
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_owned();
+        table[key] = value(new_version);
+        if let Some(val) = table[key].as_value_mut() {
+            let comment = if old_version.is_empty() {
+                format!(
+                    " # auto lock the dependency version, from <none> to {}",
+                    new_version
+                )
+            } else {
+                format!(
+                    " # auto lock the dependency version, from {} to {}",
+                    old_version, new_version
+                )
+            };
+            val.decor_mut().set_suffix(&comment);
+        }
+    };
+
+    // modify [dependencies]
+    if let Some(table) = doc["dependencies"].as_table_mut() {
+        set_dep_with_comment(table, dep_name, &version_str);
+    }
+    // modify [dev-dependencies]
+    if let Some(table) = doc["dev-dependencies"].as_table_mut() {
+        if table.contains_key(dep_name) {
+            set_dep_with_comment(table, dep_name, &version_str);
+        }
+    }
+    // modify [build-dependencies]
+    if let Some(table) = doc["build-dependencies"].as_table_mut() {
+        if table.contains_key(dep_name) {
+            set_dep_with_comment(table, dep_name, &version_str);
+        }
+    }
+
+    tokio_fs::write(&cargo_toml_path, doc.to_string())
+        .await
+        .context("Failed to write back Cargo.toml")?;
+
+    Ok(original_content)
 }

@@ -1,13 +1,12 @@
+use anyhow::{Context, Result};
 use futures::stream::{self, StreamExt};
-use std::collections::{HashSet, VecDeque};
+use semver::{Version, VersionReq};
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::Semaphore;
-
-use anyhow::{Context, Result};
-use semver::{Version, VersionReq};
 use tokio::fs as tokio_fs;
 use tokio::process::Command;
+use tokio::sync::Mutex;
 use tokio::time::{timeout, Duration};
 use tracing::{info, warn};
 
@@ -17,7 +16,6 @@ use crate::model::{Krate, ReverseDependency};
 use crate::utils;
 
 const MAX_CONCURRENT_TASKS: usize = 8;
-const BATCH_SIZE: usize = 100;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct VisitedCrateVersion {
@@ -28,8 +26,7 @@ pub struct VisitedCrateVersion {
 #[derive(Debug, Clone)]
 pub struct DependencyAnalyzer {
     database: Arc<Database>,
-    fs_manager: CrateWorkspaceFileSystemManager,
-    semaphore: Arc<Semaphore>,
+    fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
 }
 
 impl DependencyAnalyzer {
@@ -37,19 +34,23 @@ impl DependencyAnalyzer {
         let database = Database::new().await?;
         Ok(Self {
             database: Arc::new(database),
-            fs_manager: CrateWorkspaceFileSystemManager::new(),
-            semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_TASKS)),
+            fs_manager: Arc::new(Mutex::new(CrateWorkspaceFileSystemManager::new())),
         })
     }
 
     pub async fn analyze(
-        &mut self,
+        &self,
         cve_id: &str,
         crate_name: &str,
         version_range: &str,
         function_path: &str,
     ) -> Result<()> {
-        let root_idx = self.fs_manager.create_root(cve_id, crate_name).await?;
+        let root_idx = self
+            .fs_manager
+            .lock()
+            .await
+            .create_root(cve_id, crate_name)
+            .await?;
         let versions = self.database.query_crate_versions(crate_name).await?;
         // select oldest and newest versions that match the version range
         let two_end_versions: Vec<(usize, Version)> =
@@ -58,7 +59,8 @@ impl DependencyAnalyzer {
         let mut bfs_queue = VecDeque::new();
         for (_, version) in two_end_versions {
             let ver_str = &version.to_string();
-            let krate = Krate::create(crate_name, ver_str, root_idx, &mut self.fs_manager).await?;
+            let krate =
+                Krate::create(crate_name, ver_str, root_idx, self.fs_manager.clone()).await?;
             bfs_queue.push_back(krate);
         }
         self.bfs(bfs_queue, function_path).await?;
@@ -84,10 +86,11 @@ impl DependencyAnalyzer {
         current_level: Vec<Krate>,
         target_function_path: &str,
     ) -> Result<Vec<Krate>> {
-        //let analyzer = Arc::new(self);
+        let analyzer = Arc::new(self.clone());
         Ok(stream::iter(current_level)
             .map(async |krate| {
-                self.process_single_bfs_node(&krate, &target_function_path)
+                analyzer
+                    .process_single_bfs_node(&krate, &target_function_path)
                     .await
             })
             .buffer_unordered(MAX_CONCURRENT_TASKS) // 使用常量
@@ -104,185 +107,56 @@ impl DependencyAnalyzer {
         krate: &Krate,
         target_function_path: &str,
     ) -> Result<Vec<Krate>> {
-        let precise_version = &krate.version();
+        let selected_dependents = self.get_reverse_deps_for_krate(krate).await?;
 
-        let reverse_deps = self.database.query_dependents(&krate.name()).await?;
-        let reverse_deps_for_certain_version =
-            utils::filter_dependents_by_version_req(reverse_deps, precise_version).await?;
+        let batch_results = stream::iter(selected_dependents)
+            .map(|reverse_dependency| {
+                let rev_name = reverse_dependency.name.clone();
+                let rev_ver = reverse_dependency.version.clone();
+                let req = reverse_dependency.req.clone();
 
-        let krate = Arc::new(krate);
+                let krate = Arc::new(krate.clone());
 
-        let mut dependents_map: std::collections::HashMap<
-            String,
-            Vec<(Version, ReverseDependency)>,
-        > = std::collections::HashMap::new();
+                async move {
+                    let dep_krate =
+                        Krate::create(&rev_name, &rev_ver, krate.ws_idx, self.fs_manager.clone())
+                            .await
+                            .ok()?;
 
-        // 按crate名称分组并解析版本
-        for revdep in reverse_deps_for_certain_version {
-            if let Ok(version) = Version::parse(&revdep.version) {
-                dependents_map
-                    .entry(revdep.name.clone())
-                    .or_insert_with(Vec::new)
-                    .push((version, revdep));
-            }
-        }
+                    let working_dir = dep_krate.get_working_dir(self.fs_manager.clone()).await;
+                    utils::patch_dep(&working_dir, &krate.name, &krate.version)
+                        .await
+                        .expect(&format!(
+                            "patch dep {} {} failed",
+                            &krate.name, &krate.version
+                        ));
 
-        // 对每个crate名称，按版本排序并只选最老和最新版本
-        let mut selected_dependents = Vec::new();
-        let mut total_crates = 0;
-        let mut total_versions = 0;
-
-        for (name, revdeps) in dependents_map {
-            let versions = revdeps
-                .iter()
-                .map(|(version, _)| version.to_string())
-                .collect::<Vec<_>>();
-            let selected: Vec<(usize, Version)> =
-                utils::select_two_end_vers(versions, ">=0.0.0").await;
-
-            let selected = selected
-                .into_iter()
-                .map(|(idx, _)| revdeps[idx].1.clone())
-                .collect::<Vec<_>>();
-
-            selected_dependents.extend(selected);
-        }
-
-        let mut next_nodes = Vec::new();
-        let mut total_progress_idx = 0;
-
-        for (batch_idx, batch) in selected_dependents.chunks(BATCH_SIZE).enumerate() {
-            tracing::info!("开始处理第{}批, 本批{}个依赖者", batch_idx + 1, batch.len());
-            let batch_vec = batch.to_vec();
-            let selected_dependents_len = selected_dependents.len();
-            let batch_results = stream::iter(batch_vec.into_iter().enumerate())
-                .map(|(idx, reverse_dependency)| {
-                    let reverse_name = reverse_dependency.name.clone();
-                    let reverse_version = reverse_dependency.version.clone();
-                    let req_for_dep = reverse_dependency.req.clone();
-
-                    let analyzer = self.clone();
-                    let target_function_path = target_function_path.to_string();
-                    let krate = Arc::clone(&krate);
-
-                    total_progress_idx += 1;
-                    tracing::info!(
-                        "[依赖者进度 {}/{}] 正在分析依赖者: {} {}",
-                        total_progress_idx,
-                        selected_dependents_len,
-                        reverse_name,
-                        reverse_version
-                    );
-                    async move {
-                        let _permit = analyzer.semaphore.acquire().await.unwrap();
-                        let dep_krate = Krate::create(
-                            &reverse_name,
-                            &reverse_version,
-                            todo!(),
-                            &mut self.fs_manager,
+                    match self
+                        .is_valid_dependent(
+                            &krate.version,
+                            &req,
+                            &rev_name,
+                            &rev_ver,
+                            target_function_path,
                         )
                         .await
-                        .ok()?;
-                        let dep_dir = match dep_krate.fetch_and_unzip_crate().await {
-                            Ok(dir) => dir,
-                            Err(e) => {
-                                tracing::warn!(
-                                    "[{}-{}] get_crate_dir_path失败: {}，跳过",
-                                    reverse_name,
-                                    reverse_version,
-                                    e
-                                );
-                                return None;
-                            }
-                        };
-
-                        tracing::info!(
-                            "[{}-{}] 开始 patch_cargo_toml_with_parent",
-                            reverse_name,
-                            reverse_version
-                        );
-
-                        let patch_result = timeout(
-                            Duration::from_secs(60),
-                            Krate::patch_cargo_toml_with_parent(
-                                &dep_dir,
-                                &krate.name(),
-                                &krate.version(),
-                            ),
-                        )
-                        .await;
-
-                        if let Ok(Ok(_)) = patch_result {
-                            tracing::info!(
-                                "[{}-{}] 完成 patch_cargo_toml_with_parent",
-                                reverse_name,
-                                reverse_version
-                            );
-                        } else {
-                            tracing::warn!(
-                                "[{}-{}] patch_cargo_toml_with_parent失败，跳过该crate后续分析",
-                                reverse_name,
-                                reverse_version
-                            );
-                            return None;
-                        }
-
-                        tracing::info!(
-                            "[{}-{}] 开始 is_valid_dependent",
-                            reverse_name,
-                            reverse_version
-                        );
-                        let is_valid = analyzer
-                            .is_valid_dependent(
-                                &krate.version(),
-                                &req_for_dep,
-                                &reverse_name,
-                                &reverse_version,
-                                target_function_path.as_str(),
-                            )
-                            .await
-                            .unwrap_or(false);
-                        tracing::info!(
-                            "[{}-{}] is_valid_dependent结果: {}",
-                            reverse_name,
-                            reverse_version,
-                            is_valid
-                        );
-
-                        // 分析结束后删除 Cargo.lock
-                        let cargo_lock_path = dep_dir.join("Cargo.lock");
-                        let _ = tokio_fs::remove_file(&cargo_lock_path).await;
-
-                        if is_valid {
-                            tracing::info!(
-                                "依赖者 {} {} 满足条件，加入下一层",
-                                reverse_name,
-                                reverse_version
-                            );
-                            Some(dep_krate)
-                        } else {
-                            tracing::info!(
-                                "依赖者 {} {} 不满足条件，跳过",
-                                reverse_name,
-                                reverse_version
+                    {
+                        Ok(_) => Some(dep_krate),
+                        Err(e) => {
+                            warn!(
+                                "分析依赖者 {} {} 时发生错误: {}",
+                                &krate.name, &krate.version, e
                             );
                             None
                         }
                     }
-                })
-                .buffer_unordered(MAX_CONCURRENT_TASKS)
-                .collect::<Vec<_>>()
-                .await;
+                }
+            })
+            .buffer_unordered(MAX_CONCURRENT_TASKS)
+            .collect::<Vec<_>>()
+            .await;
 
-            tracing::info!(
-                "第{}批处理完成，成功节点数: {}",
-                batch_idx + 1,
-                batch_results.iter().filter(|x| x.is_some()).count()
-            );
-            next_nodes.extend(batch_results.into_iter().filter_map(|x| x));
-        }
-
-        Ok(next_nodes)
+        Ok(batch_results.into_iter().flatten().collect::<Vec<_>>())
     }
 
     fn get_original_dir(&self) -> PathBuf {
@@ -296,7 +170,7 @@ impl DependencyAnalyzer {
         crate_version: &str,
         function_path: &str,
     ) -> Option<String> {
-        let krate = Krate::create(crate_name, crate_version, todo!(), &mut self.fs_manager)
+        let krate = Krate::create(crate_name, crate_version, todo!(), self.fs_manager.clone())
             .await
             .ok()?;
         let original_dir = self.get_original_dir();
@@ -345,8 +219,7 @@ impl DependencyAnalyzer {
         // 下载并解压crate（已自动判断是否已存在）
         let crate_dir = krate.fetch_and_unzip_crate().await.context(format!(
             "无法下载或解压 crate: {} {}",
-            krate.name(),
-            krate.version()
+            krate.name, krate.version
         ))?;
 
         info!("crate目录已就绪: {}", crate_dir.display());
@@ -502,23 +375,17 @@ impl DependencyAnalyzer {
 
         match analysis_result {
             Ok(Some(result)) => {
-                info!("crate {} {} 调用了目标函数", krate.name(), krate.version());
+                info!("crate {} {} 调用了目标函数", krate.name, krate.version);
                 Some(result)
             }
             Ok(None) => {
-                info!(
-                    "crate {} {} 没有调用目标函数",
-                    krate.name(),
-                    krate.version()
-                );
+                info!("crate {} {} 没有调用目标函数", krate.name, krate.version);
                 None
             }
             Err(e) => {
                 warn!(
                     "分析 crate {} {} 时发生错误: {}",
-                    krate.name(),
-                    krate.version(),
-                    e
+                    krate.name, krate.version, e
                 );
                 None
             }
@@ -555,5 +422,48 @@ impl DependencyAnalyzer {
             }
         }
         Ok(false)
+    }
+
+    async fn get_reverse_deps_for_krate(
+        &self,
+        krate: &Krate,
+    ) -> anyhow::Result<Vec<ReverseDependency>> {
+        let precise_version = &krate.version;
+
+        let reverse_deps = self.database.query_dependents(&krate.name).await?;
+        let reverse_deps_for_certain_version =
+            utils::filter_dependents_by_version_req(reverse_deps, precise_version).await?;
+
+        let mut dependents_map: std::collections::HashMap<String, Vec<ReverseDependency>> =
+            std::collections::HashMap::new();
+
+        for revdep in reverse_deps_for_certain_version {
+            dependents_map
+                .entry(revdep.name.clone())
+                .or_insert_with(Vec::new)
+                .push(revdep.clone());
+        }
+
+        let selected_dependents = stream::iter(dependents_map.iter_mut())
+            .then(|(_, revdeps)| async move {
+                utils::select_two_end_vers(
+                    revdeps
+                        .iter()
+                        .map(|revdep| revdep.version.clone())
+                        .collect(),
+                    ">=0.0.0",
+                )
+                .await
+                .into_iter()
+                .map(|(idx, _)| revdeps[idx].clone())
+                .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        Ok(selected_dependents)
     }
 }

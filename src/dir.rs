@@ -12,6 +12,7 @@ pub(crate) struct CrateWorkspace {
     cve_id: String,
     path: PathBuf,
     name: String,
+    index: usize,
 }
 
 impl CrateWorkspace {
@@ -25,18 +26,24 @@ impl CrateWorkspace {
         .join(&cve_id)
         .join(format!("{}-workspace", name));
         fs::create_dir_all(&path).await.unwrap();
-        Self { cve_id, path, name }
+        Self {
+            cve_id,
+            path,
+            name,
+            index: 0,
+        }
     }
 
     /// create a child crate workspace
     /// $WORKING_DIR/tokio-workspace/tokio-1.0.0-workspace
-    pub async fn create_child(parent: &CrateWorkspace, name: String) -> Self {
+    pub async fn create_child(parent: &CrateWorkspace, name: String, index: usize) -> Self {
         let path = parent.path.join(format!("{}-workspace", name));
         fs::create_dir_all(&path).await.unwrap();
         Self {
             cve_id: parent.cve_id.clone(),
             path,
             name,
+            index,
         }
     }
 }
@@ -48,8 +55,6 @@ pub(crate) struct CrateVersionDir {
     path: PathBuf,
     name: String,
     version: String,
-    is_downloaded: bool,
-    is_extracted: bool,
 }
 
 impl CrateVersionDir {
@@ -60,8 +65,6 @@ impl CrateVersionDir {
             path,
             name,
             version,
-            is_downloaded: false,
-            is_extracted: false,
         }
     }
 }
@@ -88,7 +91,7 @@ impl CrateWorkspaceFileSystemManager {
         crate_name: &str,
     ) -> anyhow::Result<CrateWorkspaceIndex> {
         let crate_workspace =
-            CrateWorkspace::create_root(cve_id.to_string(), crate_name.to_string()).await;
+            CrateWorkspace::create_root(cve_id.to_owned(), crate_name.to_owned()).await;
         self.workspaces.push(crate_workspace.clone());
         assert_eq!(self.workspaces.len(), 1);
         Ok(0)
@@ -108,8 +111,12 @@ impl CrateWorkspaceFileSystemManager {
             .workspaces
             .get(parent)
             .ok_or(anyhow::anyhow!("parent workspace not found"))?;
-        let crate_workspace =
-            CrateWorkspace::create_child(parent_workspace, crate_name.to_string()).await;
+        let crate_workspace = CrateWorkspace::create_child(
+            parent_workspace,
+            crate_name.to_string(),
+            self.workspaces.len(),
+        )
+        .await;
         self.workspaces.push(crate_workspace.clone());
 
         let version_dir = CrateVersionDir::create(

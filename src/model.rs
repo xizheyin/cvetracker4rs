@@ -1,75 +1,57 @@
 use anyhow::{Context, Result};
-use once_cell::sync::Lazy;
-use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs as tokio_fs;
 use tokio::process::Command;
-use tokio::sync::Semaphore;
-use tracing::{info, warn};
+use tokio::sync::Mutex;
+use tracing::info;
 
-use crate::dir::CrateWorkspaceFileSystemManager;
-
-const MAX_DOWNLOAD_CONCURRENT: usize = 4; // same as DependencyAnalyzer
-                                          // static CARGO_UPDATE_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
-
-// download/unzip limit
-static DOWNLOAD_SEMAPHORE: Lazy<Arc<Semaphore>> =
-    Lazy::new(|| Arc::new(Semaphore::new(MAX_DOWNLOAD_CONCURRENT)));
+use crate::dir::{CrateVersionDirIndex, CrateWorkspaceFileSystemManager, CrateWorkspaceIndex};
 
 #[derive(Debug, Clone)]
 pub struct Krate {
-    name: String,
-    version: String,
-    dependents: Vec<Krate>,
+    pub(crate) name: String,
+    pub(crate) version: String,
+    pub(crate) dependents: Vec<Krate>,
     /// the working directory of the crate. when analyzing a crate,
     /// a copy of the crate will be created in the working directory
-    working_dir: PathBuf,
+    pub(crate) ws_idx: CrateWorkspaceIndex,
+    pub(crate) dir_idx: CrateVersionDirIndex,
 }
 
 impl Krate {
+    /// This function is used to create a krate
+    /// 1. create a krate workspace and version directory
+    /// 2. download and unzip the crate
+    /// 3. copy it to the working directory
+    /// 4. return the krate object
     pub async fn create(
         name: &str,
         version: &str,
         parent_index: usize,
-        fs_manager: &mut CrateWorkspaceFileSystemManager,
+        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
     ) -> Result<Self> {
-        let (_crate_workspace_index, version_dir_index) = fs_manager
+        let (ws_idx, dir_idx) = fs_manager
+            .lock()
+            .await
             .create_krate_working_dir(parent_index, name, version)
             .await?;
-        let working_dir = fs_manager.get_krate_working_dir(version_dir_index).unwrap();
-        Ok(Self {
+
+        let krate = Self {
             name: name.to_owned(),
             version: version.to_owned(),
             dependents: Vec::new(),
-            working_dir,
-        })
-    }
+            ws_idx,
+            dir_idx,
+        };
 
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub fn version(&self) -> String {
-        self.version.clone()
-    }
-
-    #[allow(dead_code)]
-    pub fn dependents(&self) -> &Vec<Krate> {
-        &self.dependents
-    }
-
-    #[allow(dead_code)]
-    pub fn dependents_mut(&mut self) -> &mut Vec<Krate> {
-        &mut self.dependents
-    }
-
-    /// get the working directory and create it if it does not exist
-    pub(crate) async fn get_and_create_working_dir(&self) -> Result<PathBuf> {
-        if !self.working_dir.exists() {
-            tokio_fs::create_dir_all(&self.working_dir).await.unwrap();
-        }
-        Ok(self.working_dir.clone())
+        // download into download directory and unzip into extract directory
+        krate.fetch_and_unzip_crate().await?;
+        // copy the crate to the working directory
+        // now, we have a copy of the crate in the
+        // working directory, which can be modified anyway
+        krate.cp_crate_to_working_dir(fs_manager).await?;
+        Ok(krate)
     }
 
     /// obtain the download directory
@@ -91,6 +73,17 @@ impl Krate {
     async fn get_extract_crate_dir_path(&self) -> PathBuf {
         let extract_dir = format!("{}-{}", self.name, self.version);
         self.get_download_crate_dir_path().await.join(extract_dir)
+    }
+
+    pub(crate) async fn get_working_dir(
+        &self,
+        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
+    ) -> PathBuf {
+        fs_manager
+            .lock()
+            .await
+            .get_krate_working_dir(self.dir_idx)
+            .unwrap()
     }
 
     /// download the crate file
@@ -282,6 +275,20 @@ impl Krate {
         result
     }
 
+    async fn cp_crate_to_working_dir(
+        &self,
+        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
+    ) -> Result<()> {
+        let extract_dir = self.get_extract_crate_dir_path().await;
+        let working_dir = fs_manager
+            .lock()
+            .await
+            .get_krate_working_dir(self.dir_idx)
+            .unwrap();
+        tokio_fs::copy(&extract_dir, &working_dir).await?;
+        Ok(())
+    }
+
     /// cleanup the downloaded crate file, keep the extracted directory
     pub async fn cleanup_crate_file(&self) -> Result<()> {
         let crate_file_path = self.get_download_crate_file_path().await;
@@ -322,62 +329,6 @@ impl Krate {
             tracing::warn!("cargo clean 执行失败: {}", stderr);
         }
         Ok(())
-    }
-
-    /// patch the target crate's Cargo.toml, lock the parent dependency to the specified version
-    pub async fn patch_cargo_toml_with_parent(
-        crate_dir: &Path,
-        parent_name: &str,
-        parent_version: &str,
-    ) -> Result<Option<String>> {
-        let cargo_toml_path = crate_dir.join("Cargo.toml");
-        let original_content = tokio_fs::read_to_string(&cargo_toml_path).await.ok();
-
-        let mut command_str = String::new();
-        write!(
-            &mut command_str,
-            "cargo update --precise {} --package {} --manifest-path {}",
-            parent_version,
-            parent_name,
-            cargo_toml_path.to_string_lossy()
-        )
-        .expect("构建命令字符串失败");
-
-        // 记录执行的命令
-        tracing::info!("执行命令: {}", command_str);
-
-        // let _update_guard = CARGO_UPDATE_MUTEX.lock().await;
-        // 使用cargo update --precise
-        let status = Command::new("cargo")
-            .args(&[
-                "update",
-                "--precise",
-                parent_version,
-                "--package",
-                parent_name,
-                "--manifest-path",
-                &cargo_toml_path.to_string_lossy(),
-            ])
-            .current_dir(crate_dir)
-            .output()
-            .await
-            .context("执行 cargo update --precise 失败")?;
-        if !status.status.success() {
-            let stderr = String::from_utf8_lossy(&status.stderr);
-            tracing::warn!(
-                "cargo update --precise 执行失败: {}, 命令: {}",
-                stderr,
-                command_str
-            );
-            return Err(anyhow::anyhow!(
-                "cargo update --precise 执行失败: {}, 命令: {}",
-                stderr,
-                command_str
-            ));
-        } else {
-            tracing::info!("cargo update --precise 执行成功");
-        }
-        Ok(original_content)
     }
 }
 
