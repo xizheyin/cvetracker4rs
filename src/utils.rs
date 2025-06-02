@@ -1,11 +1,64 @@
-use std::{collections::VecDeque, path::Path};
+use std::{
+    collections::VecDeque,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
+use futures::stream::{self as futures_stream, StreamExt};
 use semver::{Version, VersionReq};
 use tokio::fs as tokio_fs;
 use toml_edit::{value, DocumentMut};
 
-use crate::model::ReverseDependency;
+use crate::{
+    database::Database,
+    model::{Krate, ReverseDependency},
+};
+
+/// Get reverse dependencies for a krate in range of its version
+/// every reverse dependency will yield two versions,
+/// one is the oldest version and the other is the newest version
+pub(crate) async fn get_reverse_deps_for_krate(
+    database: &Database,
+    krate: &Krate,
+) -> anyhow::Result<Vec<ReverseDependency>> {
+    let precise_version = &krate.version;
+
+    let reverse_deps = database.query_dependents(&krate.name).await?;
+    let reverse_deps_for_certain_version =
+        filter_dependents_by_version_req(reverse_deps, precise_version).await?;
+
+    let mut dependents_map: std::collections::HashMap<String, Vec<ReverseDependency>> =
+        std::collections::HashMap::new();
+
+    for revdep in reverse_deps_for_certain_version {
+        dependents_map
+            .entry(revdep.name.clone())
+            .or_insert_with(Vec::new)
+            .push(revdep.clone());
+    }
+
+    let selected_dependents = futures_stream::iter(dependents_map.iter_mut())
+        .then(|(_, revdeps)| async move {
+            select_two_end_vers(
+                revdeps
+                    .iter()
+                    .map(|revdep| revdep.version.clone())
+                    .collect(),
+                ">=0.0.0",
+            )
+            .await
+            .into_iter()
+            .map(|(idx, _)| revdeps[idx].clone())
+            .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+    Ok(selected_dependents)
+}
 
 pub(crate) async fn filter_dependents_by_version_req(
     dependents: Vec<ReverseDependency>,
@@ -159,4 +212,12 @@ pub async fn patch_dep(
         .context("Failed to write back Cargo.toml")?;
 
     Ok(original_content)
+}
+
+pub(crate) fn get_current_dir() -> PathBuf {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
+pub(crate) async fn set_current_dir(dir: &PathBuf) -> anyhow::Result<()> {
+    std::env::set_current_dir(dir).context("Failed to change directory")
 }

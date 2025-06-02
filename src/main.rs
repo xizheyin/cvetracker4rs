@@ -1,3 +1,4 @@
+mod callgraph;
 mod database;
 mod dependency_analyzer;
 mod dir;

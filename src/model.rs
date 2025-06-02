@@ -289,26 +289,12 @@ impl Krate {
         Ok(())
     }
 
-    /// cleanup the downloaded crate file, keep the extracted directory
-    pub async fn cleanup_crate_file(&self) -> Result<()> {
-        let crate_file_path = self.get_download_crate_file_path().await;
-
-        if crate_file_path.exists() {
-            tokio_fs::remove_file(&crate_file_path)
-                .await
-                .context(format!(
-                    "Failed to delete file: {}",
-                    crate_file_path.display()
-                ))?;
-            info!("Deleted crate file: {}", crate_file_path.display());
-        }
-
-        Ok(())
-    }
-
     /// execute cargo clean in the crate extract directory, release the target space
-    pub async fn cargo_clean(&self) -> Result<()> {
-        let extract_dir = self.get_extract_crate_dir_path().await;
+    pub async fn cargo_clean(
+        &self,
+        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
+    ) -> Result<()> {
+        let extract_dir = self.get_working_dir(fs_manager).await;
         let manifest_path = extract_dir.join("Cargo.toml");
         if !manifest_path.exists() {
             tracing::warn!("cargo_clean: {} 不存在，跳过", manifest_path.display());
