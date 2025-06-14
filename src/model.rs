@@ -17,6 +17,7 @@ pub struct Krate {
     /// a copy of the crate will be created in the working directory
     pub(crate) ws_idx: CrateWorkspaceIndex,
     pub(crate) dir_idx: CrateVersionDirIndex,
+    pub(crate) working_dir: PathBuf,
 }
 
 impl Krate {
@@ -43,6 +44,11 @@ impl Krate {
             dependents: Vec::new(),
             ws_idx,
             dir_idx,
+            working_dir: fs_manager
+                .lock()
+                .await
+                .get_krate_working_dir(dir_idx)
+                .await,
         };
 
         // download into download directory and unzip into extract directory
@@ -80,34 +86,26 @@ impl Krate {
 
     pub(crate) async fn get_working_dir(
         &self,
-        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
     ) -> PathBuf {
-        fs_manager
-            .lock()
-            .await
-            .get_krate_working_dir(self.dir_idx)
-            .await
+        self.working_dir.clone()
     }
 
-    pub(crate) async fn get_cargo_toml_path(&self) -> PathBuf {
-        let extract_dir = self.get_extract_crate_dir_path().await;
-        extract_dir.join("Cargo.toml")
+    pub(crate) async fn get_cargo_toml_path(
+        &self,
+    ) -> PathBuf {
+        self.working_dir.join("Cargo.toml")
     }
 
     pub(crate) async fn get_target_dir(&self) -> PathBuf {
-        let extract_dir = self.get_extract_crate_dir_path().await;
-        extract_dir.join("target")
+        self.working_dir.join("target")
     }
 
     pub(crate) async fn get_src_dir(&self) -> PathBuf {
-        let extract_dir = self.get_extract_crate_dir_path().await;
-        extract_dir.join("src")
+        self.working_dir.join("src")
     }
 
     pub async fn has_cargo_toml(&self) -> bool {
-        let extract_dir = self.get_extract_crate_dir_path().await;
-        let cargo_toml_path = extract_dir.join("Cargo.toml");
-        cargo_toml_path.exists()
+        self.get_cargo_toml_path().await.exists()
     }
 
     /// download the crate file
