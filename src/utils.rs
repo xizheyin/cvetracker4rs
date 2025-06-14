@@ -1,11 +1,11 @@
+use anyhow::Context;
+use fs_extra::dir::{copy as dir_copy, CopyOptions};
+use futures::stream::{self as futures_stream, StreamExt};
+use semver::{Version, VersionReq};
 use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
-use fs_extra::dir::{copy as dir_copy, CopyOptions};
-use anyhow::Context;
-use futures::stream::{self as futures_stream, StreamExt};
-use semver::{Version, VersionReq};
 use tokio::fs as tokio_fs;
 use toml_edit::{value, DocumentMut};
 
@@ -159,7 +159,9 @@ pub async fn patch_dep(
 ) -> anyhow::Result<String> {
     tracing::debug!("Patch the dependency: {} to {}", dep_name, dep_version);
     let cargo_toml_path = crate_dir.join("Cargo.toml");
-    let original_content = tokio_fs::read_to_string(&cargo_toml_path).await.map_err(|e| anyhow::anyhow!("Failed to read {:?}: {}", cargo_toml_path, e))?;
+    let original_content = tokio_fs::read_to_string(&cargo_toml_path)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to read {:?}: {}", cargo_toml_path, e))?;
 
     let mut doc = original_content
         .parse::<DocumentMut>()
@@ -216,13 +218,7 @@ pub async fn patch_dep(
     Ok(original_content)
 }
 
-
-
-pub async fn copy_dir(
-    from: &Path,
-    to: &Path,
-    overwrite: bool,
-) -> anyhow::Result<u64> {
+pub async fn copy_dir(from: &Path, to: &Path, overwrite: bool) -> anyhow::Result<u64> {
     let from_path = from.to_path_buf();
     let to_path = to.to_path_buf();
     let mut options = CopyOptions::new();
@@ -230,15 +226,15 @@ pub async fn copy_dir(
     options.skip_exist = true;
     options.copy_inside = true;
 
-    tokio::task::spawn_blocking(move || {
-        dir_copy(&from_path, &to_path, &options)
-    })
-    .await
-    .map_err(|e| anyhow::anyhow!("thread pool execute copy task failed: {e}"))?
-    .map_err(|e| anyhow::anyhow!(
-        "Failed to copy directory from {} to {}: {}",
-        from.to_string_lossy(),
-        to.to_string_lossy(),
-        e
-    ))
+    tokio::task::spawn_blocking(move || dir_copy(&from_path, &to_path, &options))
+        .await
+        .map_err(|e| anyhow::anyhow!("thread pool execute copy task failed: {e}"))?
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to copy directory from {} to {}: {}",
+                from.to_string_lossy(),
+                to.to_string_lossy(),
+                e
+            )
+        })
 }

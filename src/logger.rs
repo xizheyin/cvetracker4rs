@@ -9,8 +9,7 @@ pub(crate) fn log_init() -> tracing_appender::non_blocking::WorkerGuard {
         .expect("Failed to initialize LogTracer");
 
     // 让日志级别由 RUST_LOG 环境变量控制，默认 info
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
     let std_layer = tracing_subscriber::fmt::layer()
         .with_level(true)

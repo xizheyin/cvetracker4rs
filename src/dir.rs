@@ -72,7 +72,6 @@ impl CrateVersionDir {
         }
     }
 
-
     pub async fn create(me: &CrateWorkspace, name: String, version: String) -> Self {
         let path = me.path.join(format!("{}-{}", name, version));
         fs::create_dir_all(&path).await.unwrap();
@@ -101,20 +100,17 @@ impl CrateWorkspaceFileSystemManager {
     pub async fn new(cve_id: &str) -> anyhow::Result<Self> {
         let workspaces = Vec::new();
         let mut version_dirs = Vec::new();
-        
+
         let pseudo_root_version_dir = CrateVersionDir::root(cve_id).await;
         version_dirs.push(pseudo_root_version_dir);
 
-        
         assert_eq!(version_dirs.len(), 1);
-        
+
         Ok(Self {
             workspaces,
-            version_dirs
+            version_dirs,
         })
     }
-
-
 
     /// parent is the index of the parent workspace, i.e. dependency of the crate
     /// crate_name is the name of the crate
@@ -126,12 +122,10 @@ impl CrateWorkspaceFileSystemManager {
         crate_name: &str,
         crate_version: &str,
     ) -> anyhow::Result<(CrateWorkspaceIndex, CrateVersionDirIndex)> {
-        
-        let parent_version_dir = 
-            self
-                .version_dirs
-                .get(parent)
-                .ok_or(anyhow::anyhow!("parent workspace not found"))?;
+        let parent_version_dir = self
+            .version_dirs
+            .get(parent)
+            .ok_or(anyhow::anyhow!("parent workspace not found"))?;
 
         let crate_workspace = CrateWorkspace::create_from_parent(
             parent_version_dir,
@@ -151,10 +145,7 @@ impl CrateWorkspaceFileSystemManager {
         Ok((self.workspaces.len() - 1, self.version_dirs.len() - 1))
     }
 
-    pub async fn get_krate_working_dir(
-        &self,
-        version_dir_index: CrateVersionDirIndex,
-    ) -> PathBuf {
+    pub async fn get_krate_working_dir(&self, version_dir_index: CrateVersionDirIndex) -> PathBuf {
         let version_dir = self
             .version_dirs
             .get(version_dir_index)

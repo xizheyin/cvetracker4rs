@@ -1,3 +1,5 @@
+use crate::dir::{CrateVersionDirIndex, CrateWorkspaceFileSystemManager, CrateWorkspaceIndex};
+use crate::utils;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -5,8 +7,6 @@ use tokio::fs as tokio_fs;
 use tokio::process::Command;
 use tokio::sync::Mutex;
 use tracing::info;
-use crate::dir::{CrateVersionDirIndex, CrateWorkspaceFileSystemManager, CrateWorkspaceIndex};
-use crate::utils;
 
 #[derive(Debug, Clone)]
 pub struct Krate {
@@ -50,7 +50,10 @@ impl Krate {
         // copy the crate to the working directory
         // now, we have a copy of the crate in the
         // working directory, which can be modified anyway
-        krate.cp_crate_to_working_dir(fs_manager).await.expect("Failed to copy crate to working directory");
+        krate
+            .cp_crate_to_working_dir(fs_manager)
+            .await
+            .expect("Failed to copy crate to working directory");
         Ok(krate)
     }
 
@@ -84,6 +87,21 @@ impl Krate {
             .await
             .get_krate_working_dir(self.dir_idx)
             .await
+    }
+
+    pub(crate) async fn get_cargo_toml_path(&self) -> PathBuf {
+        let extract_dir = self.get_extract_crate_dir_path().await;
+        extract_dir.join("Cargo.toml")
+    }
+
+    pub(crate) async fn get_target_dir(&self) -> PathBuf {
+        let extract_dir = self.get_extract_crate_dir_path().await;
+        extract_dir.join("target")
+    }
+
+    pub(crate) async fn get_src_dir(&self) -> PathBuf {
+        let extract_dir = self.get_extract_crate_dir_path().await;
+        extract_dir.join("src")
     }
 
     pub async fn has_cargo_toml(&self) -> bool {
@@ -160,13 +178,16 @@ impl Krate {
         // if the target directory already exists, return directly
         if extract_dir_path.exists() {
             if !force {
-            tracing::debug!(
+                tracing::debug!(
                     "directory {} already exists, no need to extract",
                     extract_dir_path.display()
                 );
                 return Ok(());
-            }else{
-                tracing::debug!("directory {} already exists, but force is true, so delete it", extract_dir_path.display());
+            } else {
+                tracing::debug!(
+                    "directory {} already exists, but force is true, so delete it",
+                    extract_dir_path.display()
+                );
                 tokio_fs::remove_dir_all(&extract_dir_path).await?;
             }
         }
@@ -195,7 +216,11 @@ impl Krate {
 
         if !unzip_result.status.success() {
             let stderr = String::from_utf8_lossy(&unzip_result.stderr);
-            return Err(anyhow::anyhow!("Extract {} failed: {}", crate_file_path.display(), stderr));
+            return Err(anyhow::anyhow!(
+                "Extract {} failed: {}",
+                crate_file_path.display(),
+                stderr
+            ));
         }
 
         // check if the directory exists
@@ -275,13 +300,18 @@ impl Krate {
                 Ok(path) => return Ok(path),
                 Err(e) => {
                     last_err = Some(e);
-                    tracing::warn!("No Cargo.toml found in {} (attempt {}/3), will retry if attempts remain", extract_dir_path.display(), attempt+1);
+                    tracing::warn!(
+                        "No Cargo.toml found in {} (attempt {}/3), will retry if attempts remain",
+                        extract_dir_path.display(),
+                        attempt + 1
+                    );
                     // 删除解压目录，准备重试
                     let _ = tokio_fs::remove_dir_all(&extract_dir_path).await;
                 }
             }
         }
-        Err(last_err.unwrap_or_else(|| anyhow::anyhow!("fetch_and_unzip_crate failed for unknown reason")))
+        Err(last_err
+            .unwrap_or_else(|| anyhow::anyhow!("fetch_and_unzip_crate failed for unknown reason")))
     }
 
     async fn cp_crate_to_working_dir(
@@ -295,7 +325,11 @@ impl Krate {
             .get_krate_working_dir(self.dir_idx)
             .await;
 
-        tracing::debug!("Copy the crate to the working directory: {} -> {}", extract_dir.display(), working_dir.display());
+        tracing::debug!(
+            "Copy the crate to the working directory: {} -> {}",
+            extract_dir.display(),
+            working_dir.display()
+        );
         utils::copy_dir(&extract_dir, &working_dir, false).await?;
         Ok(())
     }

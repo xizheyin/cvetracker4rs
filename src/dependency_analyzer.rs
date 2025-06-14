@@ -27,7 +27,9 @@ impl DependencyAnalyzer {
         let database = Database::new().await?;
         Ok(Self {
             database: Arc::new(database),
-            fs_manager: Arc::new(Mutex::new(CrateWorkspaceFileSystemManager::new(cve_id).await?)),
+            fs_manager: Arc::new(Mutex::new(
+                CrateWorkspaceFileSystemManager::new(cve_id).await?,
+            )),
         })
     }
 
@@ -37,7 +39,6 @@ impl DependencyAnalyzer {
         version_range: &str,
         function_path: &str,
     ) -> Result<()> {
-
         let versions = self.database.query_crate_versions(crate_name).await?;
         // select oldest and newest versions that match the version range
         let two_end_versions: Vec<(usize, Version)> =
@@ -48,8 +49,7 @@ impl DependencyAnalyzer {
         // push CVE node to bfs_queue
         for (_, version) in two_end_versions {
             let ver_str = &version.to_string();
-            let cve_krate =
-                Krate::create(crate_name, ver_str, 0, self.fs_manager.clone()).await?;
+            let cve_krate = Krate::create(crate_name, ver_str, 0, self.fs_manager.clone()).await?;
             let bfs_node = Arc::new(BFSNode {
                 krate: cve_krate,
                 parent: None,
@@ -90,7 +90,12 @@ impl DependencyAnalyzer {
                     .process_single_bfs_node(bfs_node, &target_function_path)
                     .await
             })
-            .buffer_unordered(env::var("MAX_CONCURRENT_BFS_NODES").unwrap_or("32".to_string()).parse::<usize>().unwrap())
+            .buffer_unordered(
+                env::var("MAX_CONCURRENT_BFS_NODES")
+                    .unwrap_or("32".to_string())
+                    .parse::<usize>()
+                    .unwrap(),
+            )
             .collect::<Vec<_>>()
             .await
             .into_iter()
@@ -135,7 +140,12 @@ impl DependencyAnalyzer {
                         })
                 }
             })
-            .buffer_unordered(env::var("MAX_CONCURRENT_TASKS").unwrap_or("32".to_string()).parse::<usize>().unwrap())
+            .buffer_unordered(
+                env::var("MAX_CONCURRENT_TASKS")
+                    .unwrap_or("32".to_string())
+                    .parse::<usize>()
+                    .unwrap(),
+            )
             .filter_map(|x| async { x })
             .collect::<Vec<_>>()
             .await;
@@ -154,26 +164,21 @@ impl DependencyAnalyzer {
             .get_working_dir(self.fs_manager.clone())
             .await;
         if let Some(parent) = &bfs_node.parent {
-            utils::patch_dep(&working_dir, &parent.krate.name, &parent.krate.version).await.unwrap();
+            utils::patch_dep(&working_dir, &parent.krate.name, &parent.krate.version)
+                .await
+                .unwrap();
 
             tracing::debug!("Analyze function calls for {}", bfs_node.krate.name);
-            let result = self
-                .analyze_function_calls(&bfs_node.krate, target_function_path)
-                .await;
+            let analysis_result = callgraph::run_function_analysis(
+                &bfs_node.krate,
+                target_function_path,
+                self.fs_manager.clone(),
+            )
+            .await?;
+            bfs_node.krate.cargo_clean(self.fs_manager.clone()).await?;
 
-            return Ok(result?.is_some());
+            return Ok(analysis_result.is_some());
         }
         Ok(true)
-    }
-
-    async fn analyze_function_calls(
-        &self,
-        krate: &Krate,
-        function_path: &str,
-    ) -> Result<Option<String>> {
-        let crate_dir = krate.get_working_dir(self.fs_manager.clone()).await;
-        let analysis_result = callgraph::run_function_analysis(&crate_dir, function_path).await?;
-        krate.cargo_clean(self.fs_manager.clone()).await?;
-        Ok(analysis_result)
     }
 }

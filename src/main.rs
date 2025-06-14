@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let version_range = ">=0.10.39, <0.10.72";
     let target_function_path = "openssl::cipher::Cipher::fetch";
     let log_file_path = Path::new("logs/cross_pro_cg.log");
-   
+
     dotenv::dotenv().ok();
     let _guard = logger::log_init();
     if log_file_path.exists() {
