@@ -11,38 +11,17 @@ pub(crate) type CrateVersionDirIndex = usize;
 pub(crate) struct CrateWorkspace {
     cve_id: String,
     path: PathBuf,
-    name: String,
-    index: usize,
 }
 
 impl CrateWorkspace {
-    /// create a root crate workspace `$WORKING_DIR/cve_id/X-workspace`
-    /// `X` is the crate where the cve is found
-    async fn create_root(cve_id: String, name: String) -> Self {
-        let path = PathBuf::from(
-            &std::env::var("WORKING_DIR").unwrap_or_else(|_| "./downloads/working".to_string()),
-        )
-        .join(&cve_id)
-        .join(format!("{}-workspace", name));
-        fs::create_dir_all(&path).await.unwrap();
-        Self {
-            cve_id,
-            path,
-            name,
-            index: 0,
-        }
-    }
-
     /// create a child crate workspace from a parent version directory
     /// $WORKING_DIR/X-workspace/X-1.0.0/Y-workspace
-    pub async fn create_from_parent(parent: &CrateVersionDir, name: String, index: usize) -> Self {
+    pub async fn create_from_parent(parent: &CrateVersionDir, name: String,) -> Self {
         let path = parent.path.join(format!("{}-workspace", name));
         fs::create_dir_all(&path).await.unwrap();
         Self {
             cve_id: parent.cve_id.clone(),
             path,
-            name,
-            index,
         }
     }
 }
@@ -130,7 +109,6 @@ impl CrateWorkspaceFileSystemManager {
         let crate_workspace = CrateWorkspace::create_from_parent(
             parent_version_dir,
             crate_name.to_string(),
-            self.workspaces.len(),
         )
         .await;
         self.workspaces.push(crate_workspace.clone());

@@ -2,10 +2,7 @@ use anyhow::Context;
 use fs_extra::dir::{copy as dir_copy, CopyOptions};
 use futures::stream::{self as futures_stream, StreamExt};
 use semver::{Version, VersionReq};
-use std::{
-    collections::VecDeque,
-    path::{Path, PathBuf},
-};
+use std::{collections::VecDeque, path::Path};
 use tokio::fs as tokio_fs;
 use toml_edit::{value, DocumentMut};
 
@@ -171,26 +168,29 @@ pub async fn patch_dep(
 
     // set the dependency with comment
     let set_dep_with_comment = |table: &mut toml_edit::Table, key: &str, new_version: &str| {
-        let old_version = table
-            .get(key)
-            .and_then(|item| item.as_value())
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_owned();
-        table[key] = value(new_version);
-        if let Some(val) = table[key].as_value_mut() {
-            let comment = if old_version.is_empty() {
-                format!(
-                    " # auto lock the dependency version, from <none> to {}",
-                    new_version
-                )
-            } else {
-                format!(
-                    " # auto lock the dependency version, from {} to {}",
-                    old_version, new_version
-                )
-            };
-            val.decor_mut().set_suffix(&comment);
+        let item = table.get_mut(key);
+        if let Some(item) = item {
+            if let Some(inline_table) = item.as_table_mut() {
+                // 形如 foo = { version = "...", ... }
+                let old_version = inline_table.get("version").and_then(|v| v.as_str()).unwrap_or("").to_owned();
+                inline_table["version"] = value(new_version);
+                let comment = if old_version.is_empty() {
+                    format!(" auto lock the dependency version, from <none> to {}", new_version)
+                } else {
+                    format!(" auto lock the dependency version, from {} to {}", old_version, new_version)
+                };
+                inline_table.decor_mut().set_suffix(&format!(" #{}", comment));
+            } else if let Some(val) = item.as_value_mut() {
+                // 形如 foo = "1.2.3"
+                let old_version = val.as_str().unwrap_or("").to_owned();
+                *val = toml_edit::Value::from(new_version);
+                let comment = if old_version.is_empty() {
+                    format!(" auto lock the dependency version, from <none> to {}", new_version)
+                } else {
+                    format!(" auto lock the dependency version, from {} to {}", old_version, new_version)
+                };
+                val.decor_mut().set_suffix(&format!(" #{}", comment));
+            }
         }
     };
 

@@ -1,5 +1,4 @@
 use tracing_log::LogTracer;
-use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 

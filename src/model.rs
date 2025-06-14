@@ -12,7 +12,6 @@ use tracing::info;
 pub struct Krate {
     pub(crate) name: String,
     pub(crate) version: String,
-    pub(crate) dependents: Vec<Krate>,
     /// the working directory of the crate. when analyzing a crate,
     /// a copy of the crate will be created in the working directory
     pub(crate) ws_idx: CrateWorkspaceIndex,
@@ -41,14 +40,9 @@ impl Krate {
         let krate = Self {
             name: name.to_owned(),
             version: version.to_owned(),
-            dependents: Vec::new(),
             ws_idx,
             dir_idx,
-            working_dir: fs_manager
-                .lock()
-                .await
-                .get_krate_working_dir(dir_idx)
-                .await,
+            working_dir: fs_manager.lock().await.get_krate_working_dir(dir_idx).await,
         };
 
         // download into download directory and unzip into extract directory
@@ -84,15 +78,11 @@ impl Krate {
         self.get_download_crate_dir_path().await.join(extract_dir)
     }
 
-    pub(crate) async fn get_working_dir(
-        &self,
-    ) -> PathBuf {
+    pub(crate) async fn get_working_dir(&self) -> PathBuf {
         self.working_dir.clone()
     }
 
-    pub(crate) async fn get_cargo_toml_path(
-        &self,
-    ) -> PathBuf {
+    pub(crate) async fn get_cargo_toml_path(&self) -> PathBuf {
         self.working_dir.join("Cargo.toml")
     }
 
@@ -104,8 +94,8 @@ impl Krate {
         self.working_dir.join("src")
     }
 
-    pub async fn has_cargo_toml(&self) -> bool {
-        self.get_cargo_toml_path().await.exists()
+    pub async fn has_cargo_toml_in_extract_dir(&self) -> bool {
+        self.get_extract_crate_dir_path().await.join("Cargo.toml").exists()
     }
 
     /// download the crate file
@@ -284,10 +274,10 @@ impl Krate {
                 }
 
                 // 检查是否有 Cargo.toml
-                if !self.has_cargo_toml().await {
+                if !self.has_cargo_toml_in_extract_dir().await {
                     return Err(anyhow::anyhow!("No Cargo.toml found in {}, will retry if attempts remain", extract_dir_path.display()));
                 }else{
-                    tracing::info!("Successfully extracted crate to: {}", extract_dir_path.display());
+                    tracing::info!("Successfully fetch and unzip the crate to: {}", extract_dir_path.display());
                 }
 
                 tracing::debug!("get_crate_dir_path: return the unzip directory: {}", extract_dir_path.display());
@@ -333,12 +323,8 @@ impl Krate {
     }
 
     /// execute cargo clean in the crate extract directory, release the target space
-    pub async fn cargo_clean(
-        &self,
-        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
-    ) -> Result<()> {
-        let extract_dir = self.get_working_dir(fs_manager).await;
-        let manifest_path = extract_dir.join("Cargo.toml");
+    pub async fn cargo_clean(&self) -> Result<()> {
+        let manifest_path = self.get_cargo_toml_path().await;
         if !manifest_path.exists() {
             tracing::warn!("cargo_clean: {} 不存在，跳过", manifest_path.display());
             return Ok(());
@@ -346,7 +332,6 @@ impl Krate {
         tracing::info!("cargo_clean: {}", manifest_path.display());
         let output = Command::new("cargo")
             .args(&["clean", "--manifest-path", &manifest_path.to_string_lossy()])
-            .current_dir(&extract_dir)
             .output()
             .await
             .context(format!(

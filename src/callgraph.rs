@@ -1,16 +1,17 @@
 use anyhow::{Context, Result};
+use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
-use std::{env, sync::Arc};
 use tokio::fs as tokio_fs;
 use tokio::process::Command;
-use tokio::sync::Mutex;
 use tokio::time::timeout;
-use tracing::{info, warn};
+use tracing::warn;
 
-use crate::{dir::CrateWorkspaceFileSystemManager, model::Krate};
+use crate::model::Krate;
 
 /// Directory guard
+/// when running the function analysis tool, the current directory will be changed to the working directory of the crate
+/// so we need to restore the original directory after the function analysis tool is finished
 struct DirGuard {
     original: PathBuf,
 }
@@ -33,9 +34,8 @@ impl Drop for DirGuard {
 pub(crate) async fn run_function_analysis(
     krate: &Krate,
     function_path: &str,
-    fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
 ) -> Result<Option<String>> {
-    let crate_dir = krate.get_working_dir(fs_manager).await;
+    let crate_dir = krate.get_working_dir().await;
     let cargo_toml_path = krate.get_cargo_toml_path().await;
     let target_dir = krate.get_target_dir().await;
     let src_dir = krate.get_src_dir().await;
@@ -75,29 +75,29 @@ pub(crate) async fn run_function_analysis(
     let call_cg_result = match timeout(Duration::from_secs(240), cmd.output()).await {
         Ok(Ok(output)) => output,
         Ok(Err(e)) => {
-            warn!("call-cg4rs工具执行出错: {}，跳过该crate", e);
+            warn!("call-cg4rs failed: {}, skip the crate", e);
             return Ok(None);
         }
         Err(_) => {
-            warn!("call-cg4rs工具分析超时(4分钟)，跳过该crate");
+            warn!("call-cg4rs analysis timeout (4 minutes), skip the crate");
             return Ok(None);
         }
     };
 
     if !call_cg_result.status.success() {
         let stderr = String::from_utf8_lossy(&call_cg_result.stderr);
-        warn!("call-cg4rs工具执行失败: {}", stderr);
+        warn!("call-cg4rs failed: {}, skip the crate", stderr);
         return Ok(None);
     }
 
     // 工具生成的 callers.json 路径
     let callers_json_path = target_dir.join("callers.json");
     if !callers_json_path.exists() {
-        info!("callers.json file not found, no function call");
+        warn!("callers.json file not found in {}, skip the crate", target_dir.display());
         return Ok(None);
     }
 
-    // 读取callers.json内容
+    // read callers.json content
     let callers_content = tokio_fs::read_to_string(&callers_json_path)
         .await
         .context(format!(

@@ -159,25 +159,31 @@ impl DependencyAnalyzer {
         target_function_path: &str,
     ) -> Result<bool> {
         tracing::info!("Check if the node is vulnerable: {}", bfs_node.krate.name);
-        let working_dir = bfs_node
-            .krate
-            .get_working_dir(self.fs_manager.clone())
-            .await;
+        let working_dir = bfs_node.krate.get_working_dir().await;
         if let Some(parent) = &bfs_node.parent {
             utils::patch_dep(&working_dir, &parent.krate.name, &parent.krate.version)
                 .await
                 .unwrap();
 
             tracing::debug!("Analyze function calls for {}", bfs_node.krate.name);
-            let analysis_result = callgraph::run_function_analysis(
-                &bfs_node.krate,
-                target_function_path,
-                self.fs_manager.clone(),
-            )
-            .await?;
-            bfs_node.krate.cargo_clean(self.fs_manager.clone()).await?;
+            let analysis_result =
+                callgraph::run_function_analysis(&bfs_node.krate, target_function_path).await;
+            bfs_node.krate.cargo_clean().await?;
 
-            return Ok(analysis_result.is_some());
+            match analysis_result {
+                Ok(Some(analysis_result)) => {
+                    tracing::info!("!!!!!!!!!!!!!!!!!!!!!!!!!!!Function analysis result: {}", analysis_result);
+                    return Ok(true);
+                }
+                Ok(None) => {
+                    tracing::info!("No function analysis result, skip the crate");
+                    return Ok(false);
+                }
+                Err(e) => {
+                    tracing::error!("Function analysis failed: {}", e);
+                    return Ok(false);
+                }
+            }
         }
         Ok(true)
     }
