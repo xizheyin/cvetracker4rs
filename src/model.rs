@@ -5,8 +5,8 @@ use tokio::fs as tokio_fs;
 use tokio::process::Command;
 use tokio::sync::Mutex;
 use tracing::info;
-
 use crate::dir::{CrateVersionDirIndex, CrateWorkspaceFileSystemManager, CrateWorkspaceIndex};
+use crate::utils;
 
 #[derive(Debug, Clone)]
 pub struct Krate {
@@ -28,13 +28,13 @@ impl Krate {
     pub async fn create(
         name: &str,
         version: &str,
-        parent_index: usize,
+        parent_version_dir_index: CrateVersionDirIndex,
         fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
     ) -> Result<Self> {
         let (ws_idx, dir_idx) = fs_manager
             .lock()
             .await
-            .create_krate_working_dir(parent_index, name, version)
+            .create_krate_working_dir(parent_version_dir_index, name, version)
             .await?;
 
         let krate = Self {
@@ -50,7 +50,7 @@ impl Krate {
         // copy the crate to the working directory
         // now, we have a copy of the crate in the
         // working directory, which can be modified anyway
-        krate.cp_crate_to_working_dir(fs_manager).await?;
+        krate.cp_crate_to_working_dir(fs_manager).await.expect("Failed to copy crate to working directory");
         Ok(krate)
     }
 
@@ -83,12 +83,18 @@ impl Krate {
             .lock()
             .await
             .get_krate_working_dir(self.dir_idx)
-            .unwrap()
+            .await
+    }
+
+    pub async fn has_cargo_toml(&self) -> bool {
+        let extract_dir = self.get_extract_crate_dir_path().await;
+        let cargo_toml_path = extract_dir.join("Cargo.toml");
+        cargo_toml_path.exists()
     }
 
     /// download the crate file
-    async fn download(&self) -> Result<()> {
-        info!("download crate: {} {}", self.name, self.version);
+    async fn download(&self, force: bool) -> Result<()> {
+        tracing::debug!("Download crate: {} {}", self.name, self.version);
 
         let download_dir = self.get_download_crate_dir_path().await;
         let crate_file_path = self.get_download_crate_file_path().await;
@@ -96,8 +102,8 @@ impl Krate {
 
         // check if the crate-version.crate file already exists
         // we don't need to download the crate file again
-        if crate_file_path.exists() {
-            info!("{} exists, skip the download", extract_dir_path.display());
+        if crate_file_path.exists() && !force {
+            tracing::debug!("{} exists, skip the download", extract_dir_path.display());
             return Ok(());
         }
 
@@ -109,7 +115,7 @@ impl Krate {
             ))?;
 
         // download the crate file
-        info!("Downloading the crate file: {}", crate_file_path.display());
+        tracing::debug!("Downloading the crate file: {}", crate_file_path.display());
         let download_url = format!(
             "https://crates.io/api/v1/crates/{}/{}/download",
             self.name, self.version
@@ -146,18 +152,23 @@ impl Krate {
     }
 
     /// unzip the crate file
-    async fn unzip(&self) -> Result<()> {
+    async fn unzip(&self, force: bool) -> Result<()> {
         let crate_file_path = self.get_download_crate_file_path().await;
         let extract_dir_path = self.get_extract_crate_dir_path().await;
         let download_dir = self.get_download_crate_dir_path().await;
 
         // if the target directory already exists, return directly
         if extract_dir_path.exists() {
-            info!(
-                "directory {} already exists, no need to extract",
-                extract_dir_path.display()
-            );
-            return Ok(());
+            if !force {
+            tracing::debug!(
+                    "directory {} already exists, no need to extract",
+                    extract_dir_path.display()
+                );
+                return Ok(());
+            }else{
+                tracing::debug!("directory {} already exists, but force is true, so delete it", extract_dir_path.display());
+                tokio_fs::remove_dir_all(&extract_dir_path).await?;
+            }
         }
 
         // ensure the crate file exists
@@ -184,7 +195,7 @@ impl Krate {
 
         if !unzip_result.status.success() {
             let stderr = String::from_utf8_lossy(&unzip_result.stderr);
-            return Err(anyhow::anyhow!("Extract command failed: {}", stderr));
+            return Err(anyhow::anyhow!("Extract {} failed: {}", crate_file_path.display(), stderr));
         }
 
         // check if the directory exists
@@ -229,50 +240,48 @@ impl Krate {
     /// download and unzip the crate, return the path to the extracted directory
     pub async fn fetch_and_unzip_crate(&self) -> Result<PathBuf> {
         let extract_dir_path = self.get_extract_crate_dir_path().await;
+        let mut last_err = None;
+        for attempt in 0..3 {
+            // if the extract directory does not exist, download and unzip the crate
+            let result = async {
+                tracing::debug!("get_crate_dir_path: extract directory does not exist, prepare to download and unzip");
+                // if the attempt is greater than 0, we need to force the download and unzip
+                let force = attempt > 0;
+                if let Err(e) = self.download(force).await {
+                    tracing::error!("Failed to download the crate: {}", e);
+                    return Err(anyhow::anyhow!("download() failed: {}", e));
+                }
 
-        // check if the extract directory exists
-        if extract_dir_path.exists() && extract_dir_path.is_dir() {
-            info!(
-                "{} exists, skip the download and unzip",
-                extract_dir_path.display()
-            );
-            return Ok(extract_dir_path);
+                if let Err(e) = self.unzip(force).await {
+                    tracing::error!(
+                        "Failed to unzip the crate {}: {e}",
+                        extract_dir_path.display()
+                    );
+                    return Err(anyhow::anyhow!("unzip() failed: {}", e));
+                }
+
+                // 检查是否有 Cargo.toml
+                if !self.has_cargo_toml().await {
+                    return Err(anyhow::anyhow!("No Cargo.toml found in {}, will retry if attempts remain", extract_dir_path.display()));
+                }else{
+                    tracing::info!("Successfully extracted crate to: {}", extract_dir_path.display());
+                }
+
+                tracing::debug!("get_crate_dir_path: return the unzip directory: {}", extract_dir_path.display());
+                Ok(extract_dir_path.clone())
+            }.await;
+
+            match result {
+                Ok(path) => return Ok(path),
+                Err(e) => {
+                    last_err = Some(e);
+                    tracing::warn!("No Cargo.toml found in {} (attempt {}/3), will retry if attempts remain", extract_dir_path.display(), attempt+1);
+                    // 删除解压目录，准备重试
+                    let _ = tokio_fs::remove_dir_all(&extract_dir_path).await;
+                }
+            }
         }
-
-        // if the extract directory does not exist, download and unzip the crate
-        let result = async {
-            tracing::info!("get_crate_dir_path: extract directory does not exist, prepare to download and unzip");
-
-            if let Err(e) = self.download().await {
-                tracing::warn!("Failed to download the crate: {}", e);
-                return Err(anyhow::anyhow!("download() failed: {}", e));
-            }
-
-            if let Err(e) = self.unzip().await {
-                tracing::warn!(
-                    "Failed to unzip the crate {}: {e}",
-                    extract_dir_path.display()
-                );
-                return Err(anyhow::anyhow!("unzip() failed: {}", e));
-            }
-
-            // check if the unzip directory is valid
-            if !extract_dir_path.is_dir() || extract_dir_path.read_dir().is_err() {
-                tracing::warn!(
-                    "get_crate_dir_path: the unzip directory is not valid: {}",
-                    extract_dir_path.display()
-                );
-                return Err(anyhow::anyhow!(
-                    "the unzip path is not a directory: {}",
-                    extract_dir_path.display()
-                ));
-            }
-
-            tracing::info!("get_crate_dir_path: return the unzip directory: {}", extract_dir_path.display());
-            Ok(extract_dir_path)
-        }.await;
-
-        result
+        Err(last_err.unwrap_or_else(|| anyhow::anyhow!("fetch_and_unzip_crate failed for unknown reason")))
     }
 
     async fn cp_crate_to_working_dir(
@@ -284,8 +293,10 @@ impl Krate {
             .lock()
             .await
             .get_krate_working_dir(self.dir_idx)
-            .unwrap();
-        tokio_fs::copy(&extract_dir, &working_dir).await?;
+            .await;
+
+        tracing::debug!("Copy the crate to the working directory: {} -> {}", extract_dir.display(), working_dir.display());
+        utils::copy_dir(&extract_dir, &working_dir, false).await?;
         Ok(())
     }
 
@@ -318,7 +329,7 @@ impl Krate {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ReverseDependency {
     // the crate name of the reverse dependency
     pub name: String,

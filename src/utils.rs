@@ -2,7 +2,7 @@ use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
-
+use fs_extra::dir::{copy as dir_copy, CopyOptions};
 use anyhow::Context;
 use futures::stream::{self as futures_stream, StreamExt};
 use semver::{Version, VersionReq};
@@ -37,7 +37,7 @@ pub(crate) async fn get_reverse_deps_for_krate(
             .push(revdep.clone());
     }
 
-    let selected_dependents = futures_stream::iter(dependents_map.iter_mut())
+    let mut selected_dependents = futures_stream::iter(dependents_map.iter_mut())
         .then(|(_, revdeps)| async move {
             select_two_end_vers(
                 revdeps
@@ -57,6 +57,7 @@ pub(crate) async fn get_reverse_deps_for_krate(
         .flatten()
         .collect::<Vec<_>>();
 
+    selected_dependents.sort();
     Ok(selected_dependents)
 }
 
@@ -129,7 +130,7 @@ async fn select_oldest_and_newest_versions(
         }
     }
 
-    tracing::info!(
+    tracing::trace!(
         "oldest version: {:?}, newest version: {:?}",
         result.0,
         result.1
@@ -140,14 +141,14 @@ async fn select_oldest_and_newest_versions(
 
 pub(crate) async fn pop_bfs_level<T>(queue: &mut VecDeque<T>) -> Vec<T> {
     let current_level: Vec<_> = queue.drain(..).collect();
-    tracing::info!("BFS弹出一层，共 {} 个节点", current_level.len());
+    tracing::info!("BFS pop a level, {} nodes", current_level.len());
     current_level
 }
 
 pub(crate) async fn push_next_level<T>(queue: &mut VecDeque<T>, next_nodes: Vec<T>) {
     let count = next_nodes.len();
     queue.extend(next_nodes);
-    tracing::info!("BFS推入下一层，共 {} 个节点", count);
+    tracing::info!("BFS push next level, {} nodes", count);
 }
 
 /// patch the target crate's Cargo.toml, lock the parent dependency to the specified version
@@ -156,8 +157,9 @@ pub async fn patch_dep(
     dep_name: &str,
     dep_version: &str,
 ) -> anyhow::Result<String> {
+    tracing::debug!("Patch the dependency: {} to {}", dep_name, dep_version);
     let cargo_toml_path = crate_dir.join("Cargo.toml");
-    let original_content = tokio_fs::read_to_string(&cargo_toml_path).await?;
+    let original_content = tokio_fs::read_to_string(&cargo_toml_path).await.map_err(|e| anyhow::anyhow!("Failed to read {:?}: {}", cargo_toml_path, e))?;
 
     let mut doc = original_content
         .parse::<DocumentMut>()
@@ -214,10 +216,29 @@ pub async fn patch_dep(
     Ok(original_content)
 }
 
-pub(crate) fn get_current_dir() -> PathBuf {
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-}
 
-pub(crate) async fn set_current_dir(dir: &PathBuf) -> anyhow::Result<()> {
-    std::env::set_current_dir(dir).context("Failed to change directory")
+
+pub async fn copy_dir(
+    from: &Path,
+    to: &Path,
+    overwrite: bool,
+) -> anyhow::Result<u64> {
+    let from_path = from.to_path_buf();
+    let to_path = to.to_path_buf();
+    let mut options = CopyOptions::new();
+    options.overwrite = overwrite;
+    options.skip_exist = true;
+    options.copy_inside = true;
+
+    tokio::task::spawn_blocking(move || {
+        dir_copy(&from_path, &to_path, &options)
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("thread pool execute copy task failed: {e}"))?
+    .map_err(|e| anyhow::anyhow!(
+        "Failed to copy directory from {} to {}: {}",
+        from.to_string_lossy(),
+        to.to_string_lossy(),
+        e
+    ))
 }

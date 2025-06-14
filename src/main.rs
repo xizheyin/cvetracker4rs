@@ -17,19 +17,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let version_range = ">=0.10.39, <0.10.72";
     let target_function_path = "openssl::cipher::Cipher::fetch";
     let log_file_path = Path::new("logs/cross_pro_cg.log");
-
+   
     dotenv::dotenv().ok();
     let _guard = logger::log_init();
     if log_file_path.exists() {
         fs::remove_file(log_file_path)?;
     }
-
-    tracing::info!("开始分析依赖关系");
-    let analyzer = DependencyAnalyzer::new().await?;
+    tracing::info!("Start to run the dependency analyzer\ncve_id: {}\ncrate_name: {}\nversion_range: {}\ntarget_function_path: {}\n", cve_id, crate_name, version_range, target_function_path);
+    let analyzer = DependencyAnalyzer::new(cve_id).await?;
     analyzer
-        .analyze(cve_id, crate_name, version_range, target_function_path)
+        .analyze(crate_name, version_range, target_function_path)
         .await?;
 
-    tracing::info!("分析完成");
+    tracing::info!("Dependency analyzer finished successfully");
     Ok(())
 }

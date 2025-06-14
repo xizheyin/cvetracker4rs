@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::fs as tokio_fs;
@@ -6,13 +7,37 @@ use tokio::process::Command;
 use tokio::time::timeout;
 use tracing::{info, warn};
 
-// 运行函数调用分析工具
+/// Directory guard
+struct DirGuard {
+    original: PathBuf,
+}
+
+impl DirGuard {
+    fn new(new_dir: &PathBuf) -> std::io::Result<Self> {
+        let original = env::current_dir()?;
+        env::set_current_dir(new_dir)?;
+        Ok(DirGuard { original })
+    }
+}
+
+impl Drop for DirGuard {
+    fn drop(&mut self) {
+        let _ = env::set_current_dir(&self.original);
+    }
+}
+
+// run function analysis tool
 pub(crate) async fn run_function_analysis(
     crate_dir: &PathBuf,
     function_path: &str,
 ) -> Result<Option<String>> {
+    tracing::debug!("Run function analysis tool for {}", crate_dir.display());
+    // use directory guard to switch and restore directory
+    let _dir_guard = DirGuard::new(&crate_dir).map_err(|e| anyhow::anyhow!(e))?;
+
     let src_dir = crate_dir.join("src");
     if !check_src_contain_target_function(&src_dir.to_string_lossy(), function_path).await? {
+        info!("Skip the function analysis, because {} does not contain the target function {}", src_dir.display(), function_path);
         return Ok(None);
     }
 
