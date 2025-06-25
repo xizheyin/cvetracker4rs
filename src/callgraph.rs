@@ -33,7 +33,7 @@ impl Drop for DirGuard {
 // run function analysis tool
 pub(crate) async fn run_function_analysis(
     krate: &Krate,
-    function_path: &str,
+    function_paths: &str,
 ) -> Result<Option<String>> {
     let crate_dir = krate.get_working_dir().await;
     let cargo_toml_path = krate.get_cargo_toml_path().await;
@@ -45,25 +45,25 @@ pub(crate) async fn run_function_analysis(
     let _dir_guard = DirGuard::new(&crate_dir).map_err(|e| anyhow::anyhow!(e))?;
 
     // check if the src directory contains the target function by grep
-    if !check_src_contain_target_function(&src_dir.to_string_lossy(), function_path).await? {
+    if !check_src_contain_target_function(&src_dir.to_string_lossy(), function_paths).await? {
         tracing::info!(
             "Skip the function analysis, because {} does not contain the target function {}",
             src_dir.display(),
-            function_path
+            function_paths
         );
         return Ok(None);
     }
 
     tracing::info!(
         "detect target function: {} in {}",
-        function_path,
+        function_paths,
         src_dir.display()
     );
 
     let mut cmd = Command::new("call-cg4rs");
     cmd.args([
         "--find-callers",
-        function_path,
+        function_paths,
         "--json-output",
         "--manifest-path",
         &cargo_toml_path.to_string_lossy(),
@@ -113,11 +113,26 @@ pub(crate) async fn run_function_analysis(
 
 pub(crate) async fn check_src_contain_target_function(
     src: &str,
+    target_function_paths: &str,
+) -> Result<bool> {
+    for path in target_function_paths.split(',') {
+        let path = path.trim();
+        if path.is_empty() {
+            continue;
+        }
+        if check_src_contain_target_function_single(src, path).await? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+async fn check_src_contain_target_function_single(
+    src: &str,
     target_function_path: &str,
 ) -> Result<bool> {
     let function_name = target_function_path.split("::").last().unwrap();
 
-    // get arguments and add to command string
     let args: Vec<String> = vec![
         "-r".to_string(),
         "-n".to_string(),
@@ -127,12 +142,9 @@ pub(crate) async fn check_src_contain_target_function(
     ];
     let mut grep_cmd = Command::new("grep");
     grep_cmd.args(args);
-    // execute grep command
     let output = grep_cmd.output().await?;
-    // return grep's exit status code
     let status = output.status;
     if !status.success() {
-        // grep will return non-zero status code when it does not find matching content, here is a special handling
         if output.stdout.is_empty() && status.code() == Some(1) {
             return Ok(false);
         } else {

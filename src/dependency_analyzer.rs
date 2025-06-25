@@ -41,7 +41,7 @@ impl DependencyAnalyzer {
         &self,
         crate_name: &str,
         version_range: &str,
-        function_path: &str,
+        function_paths: &str,
     ) -> Result<()> {
         let versions = self.database.query_crate_versions(crate_name).await?;
         // select oldest and newest versions that match the version range
@@ -61,7 +61,7 @@ impl DependencyAnalyzer {
             bfs_queue.push_back(bfs_node);
         }
 
-        self.bfs(bfs_queue, function_path).await?;
+        self.bfs(bfs_queue, function_paths).await?;
 
         Ok(())
     }
@@ -69,12 +69,12 @@ impl DependencyAnalyzer {
     async fn bfs(
         &self,
         mut queue: VecDeque<Arc<BFSNode>>,
-        target_function_path: &str,
+        target_function_paths: &str,
     ) -> Result<()> {
         while !queue.is_empty() {
             let current_level = utils::pop_bfs_level(&mut queue).await;
             let results = self
-                .process_bfs_level(current_level, target_function_path)
+                .process_bfs_level(current_level, target_function_paths)
                 .await?;
             utils::push_next_level(&mut queue, results).await;
         }
@@ -85,13 +85,13 @@ impl DependencyAnalyzer {
     async fn process_bfs_level(
         &self,
         current_level: Vec<Arc<BFSNode>>,
-        target_function_path: &str,
+        target_function_paths: &str,
     ) -> Result<Vec<Arc<BFSNode>>> {
         let analyzer = Arc::new(self.clone());
         Ok(futures_stream::iter(current_level)
             .map(async |bfs_node| {
                 analyzer
-                    .process_single_bfs_node(bfs_node, target_function_path)
+                    .process_single_bfs_node(bfs_node, target_function_paths)
                     .await
             })
             .buffer_unordered(
@@ -111,11 +111,11 @@ impl DependencyAnalyzer {
     async fn process_single_bfs_node(
         &self,
         bfs_node: Arc<BFSNode>,
-        target_function_path: &str,
+        target_function_paths: &str,
     ) -> Result<Vec<Arc<BFSNode>>> {
         // check if the node is vulnerable
         if !self
-            .check_bfs_node_vulnerable(bfs_node.clone(), target_function_path, &self.cve_id)
+            .check_bfs_node_vulnerable(bfs_node.clone(), target_function_paths, &self.cve_id)
             .await?
         {
             return Ok(vec![]);
@@ -160,7 +160,7 @@ impl DependencyAnalyzer {
     async fn check_bfs_node_vulnerable(
         &self,
         bfs_node: Arc<BFSNode>,
-        target_function_path: &str,
+        target_function_paths: &str,
         cveid: &str,
     ) -> Result<bool> {
         tracing::info!("Check if the node is vulnerable: {}", bfs_node.krate.name);
@@ -178,7 +178,7 @@ impl DependencyAnalyzer {
 
             tracing::debug!("Analyze function calls for {}", bfs_node.krate.name);
             let analysis_result =
-                callgraph::run_function_analysis(&bfs_node.krate, target_function_path).await;
+                callgraph::run_function_analysis(&bfs_node.krate, target_function_paths).await;
             bfs_node.krate.cargo_clean().await?;
 
             match analysis_result {
