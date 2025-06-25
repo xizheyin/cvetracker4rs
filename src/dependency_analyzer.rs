@@ -7,6 +7,8 @@ use futures::stream::{self as futures_stream, StreamExt};
 use semver::Version;
 use std::collections::VecDeque;
 use std::env;
+use std::fs;
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -20,6 +22,7 @@ pub(crate) struct BFSNode {
 pub struct DependencyAnalyzer {
     database: Arc<Database>,
     fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
+    cve_id: String,
 }
 
 impl DependencyAnalyzer {
@@ -30,6 +33,7 @@ impl DependencyAnalyzer {
             fs_manager: Arc::new(Mutex::new(
                 CrateWorkspaceFileSystemManager::new(cve_id).await?,
             )),
+            cve_id: cve_id.to_string(),
         })
     }
 
@@ -111,7 +115,7 @@ impl DependencyAnalyzer {
     ) -> Result<Vec<Arc<BFSNode>>> {
         // check if the node is vulnerable
         if !self
-            .check_bfs_node_vulnerable(bfs_node.clone(), target_function_path)
+            .check_bfs_node_vulnerable(bfs_node.clone(), target_function_path, &self.cve_id)
             .await?
         {
             return Ok(vec![]);
@@ -157,6 +161,7 @@ impl DependencyAnalyzer {
         &self,
         bfs_node: Arc<BFSNode>,
         target_function_path: &str,
+        cveid: &str,
     ) -> Result<bool> {
         tracing::info!("Check if the node is vulnerable: {}", bfs_node.krate.name);
         let working_dir = bfs_node.krate.get_working_dir().await;
@@ -182,6 +187,17 @@ impl DependencyAnalyzer {
                         "!!!!!!!!!!!!!!!!!!!!!!!!!!!Function analysis result: {}",
                         analysis_result
                     );
+                    let result_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("analysis_results");
+                    if !result_dir.exists() {
+                        fs::create_dir_all(&result_dir)?;
+                    }
+                    let filename = format!(
+                        "{}-{}-{}.txt",
+                        bfs_node.krate.name, bfs_node.krate.version, cveid
+                    );
+                    let filepath = result_dir.join(filename);
+                    println!("Result will be written to: {:?}", filepath);
+                    fs::write(filepath, &analysis_result)?;
                     return Ok(true);
                 }
                 Ok(None) => {
