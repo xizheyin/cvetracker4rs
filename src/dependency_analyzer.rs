@@ -87,7 +87,7 @@ impl DependencyAnalyzer {
         Ok(futures_stream::iter(current_level)
             .map(async |bfs_node| {
                 analyzer
-                    .process_single_bfs_node(bfs_node, &target_function_path)
+                    .process_single_bfs_node(bfs_node, target_function_path)
                     .await
             })
             .buffer_unordered(
@@ -163,7 +163,13 @@ impl DependencyAnalyzer {
         if let Some(parent) = &bfs_node.parent {
             utils::patch_dep(&working_dir, &parent.krate.name, &parent.krate.version)
                 .await
-                .unwrap();
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "Failed to patch dependency in {}: {}",
+                        working_dir.display(),
+                        e
+                    )
+                })?;
 
             tracing::debug!("Analyze function calls for {}", bfs_node.krate.name);
             let analysis_result =
@@ -172,7 +178,10 @@ impl DependencyAnalyzer {
 
             match analysis_result {
                 Ok(Some(analysis_result)) => {
-                    tracing::info!("!!!!!!!!!!!!!!!!!!!!!!!!!!!Function analysis result: {}", analysis_result);
+                    tracing::info!(
+                        "!!!!!!!!!!!!!!!!!!!!!!!!!!!Function analysis result: {}",
+                        analysis_result
+                    );
                     return Ok(true);
                 }
                 Ok(None) => {

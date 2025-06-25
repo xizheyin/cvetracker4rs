@@ -30,7 +30,7 @@ pub(crate) async fn get_reverse_deps_for_krate(
     for revdep in reverse_deps_for_certain_version {
         dependents_map
             .entry(revdep.name.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(revdep.clone());
     }
 
@@ -172,24 +172,42 @@ pub async fn patch_dep(
         if let Some(item) = item {
             if let Some(inline_table) = item.as_table_mut() {
                 // 形如 foo = { version = "...", ... }
-                let old_version = inline_table.get("version").and_then(|v| v.as_str()).unwrap_or("").to_owned();
+                let old_version = inline_table
+                    .get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_owned();
                 inline_table["version"] = value(new_version);
                 let comment = if old_version.is_empty() {
-                    format!(" auto lock the dependency version, from <none> to {}", new_version)
+                    format!(
+                        " auto lock the dependency version, from <none> to {}",
+                        new_version
+                    )
                 } else {
-                    format!(" auto lock the dependency version, from {} to {}", old_version, new_version)
+                    format!(
+                        " auto lock the dependency version, from {} to {}",
+                        old_version, new_version
+                    )
                 };
-                inline_table.decor_mut().set_suffix(&format!(" #{}", comment));
+                inline_table
+                    .decor_mut()
+                    .set_suffix(format!(" #{}", comment));
             } else if let Some(val) = item.as_value_mut() {
                 // 形如 foo = "1.2.3"
                 let old_version = val.as_str().unwrap_or("").to_owned();
                 *val = toml_edit::Value::from(new_version);
                 let comment = if old_version.is_empty() {
-                    format!(" auto lock the dependency version, from <none> to {}", new_version)
+                    format!(
+                        " auto lock the dependency version, from <none> to {}",
+                        new_version
+                    )
                 } else {
-                    format!(" auto lock the dependency version, from {} to {}", old_version, new_version)
+                    format!(
+                        " auto lock the dependency version, from {} to {}",
+                        old_version, new_version
+                    )
                 };
-                val.decor_mut().set_suffix(&format!(" #{}", comment));
+                val.decor_mut().set_suffix(format!(" #{}", comment));
             }
         }
     };

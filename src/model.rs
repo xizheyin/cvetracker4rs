@@ -1,4 +1,4 @@
-use crate::dir::{CrateVersionDirIndex, CrateWorkspaceFileSystemManager, CrateWorkspaceIndex};
+use crate::dir::{CrateVersionDirIndex, CrateWorkspaceFileSystemManager};
 use crate::utils;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
@@ -14,7 +14,6 @@ pub struct Krate {
     pub(crate) version: String,
     /// the working directory of the crate. when analyzing a crate,
     /// a copy of the crate will be created in the working directory
-    pub(crate) ws_idx: CrateWorkspaceIndex,
     pub(crate) dir_idx: CrateVersionDirIndex,
     pub(crate) working_dir: PathBuf,
 }
@@ -31,7 +30,7 @@ impl Krate {
         parent_version_dir_index: CrateVersionDirIndex,
         fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
     ) -> Result<Self> {
-        let (ws_idx, dir_idx) = fs_manager
+        let (_ws_idx, dir_idx) = fs_manager
             .lock()
             .await
             .create_krate_working_dir(parent_version_dir_index, name, version)
@@ -40,7 +39,6 @@ impl Krate {
         let krate = Self {
             name: name.to_owned(),
             version: version.to_owned(),
-            ws_idx,
             dir_idx,
             working_dir: fs_manager.lock().await.get_krate_working_dir(dir_idx).await,
         };
@@ -95,7 +93,10 @@ impl Krate {
     }
 
     pub async fn has_cargo_toml_in_extract_dir(&self) -> bool {
-        self.get_extract_crate_dir_path().await.join("Cargo.toml").exists()
+        self.get_extract_crate_dir_path()
+            .await
+            .join("Cargo.toml")
+            .exists()
     }
 
     /// download the crate file
@@ -128,7 +129,7 @@ impl Krate {
         );
 
         let download_result = Command::new("curl")
-            .args(&[
+            .args([
                 "-L",
                 &download_url,
                 "-o",
@@ -196,7 +197,7 @@ impl Krate {
         );
 
         let unzip_result = Command::new("tar")
-            .args(&["-xf", &crate_file_path.to_string_lossy()])
+            .args(["-xf", &crate_file_path.to_string_lossy()])
             .current_dir(&download_dir)
             .output()
             .await
@@ -331,7 +332,7 @@ impl Krate {
         }
         tracing::info!("cargo_clean: {}", manifest_path.display());
         let output = Command::new("cargo")
-            .args(&["clean", "--manifest-path", &manifest_path.to_string_lossy()])
+            .args(["clean", "--manifest-path", &manifest_path.to_string_lossy()])
             .output()
             .await
             .context(format!(

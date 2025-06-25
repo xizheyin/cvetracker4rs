@@ -1,0 +1,29 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: 安装 Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: 检查格式 (cargo fmt)
+      run: cargo fmt --all -- --check
+
+    - name: 静态分析 (cargo clippy)
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+    - name: 运行测试 (cargo test)
+      run: cargo test --all-features --all-targets -- --nocapture

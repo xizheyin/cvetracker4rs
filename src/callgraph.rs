@@ -61,7 +61,7 @@ pub(crate) async fn run_function_analysis(
     );
 
     let mut cmd = Command::new("call-cg4rs");
-    cmd.args(&[
+    cmd.args([
         "--find-callers",
         function_path,
         "--json-output",
@@ -93,7 +93,10 @@ pub(crate) async fn run_function_analysis(
     // 工具生成的 callers.json 路径
     let callers_json_path = target_dir.join("callers.json");
     if !callers_json_path.exists() {
-        warn!("callers.json file not found in {}, skip the crate", target_dir.display());
+        warn!(
+            "callers.json file not found in {}, skip the crate",
+            target_dir.display()
+        );
         return Ok(None);
     }
 
@@ -128,9 +131,7 @@ pub(crate) async fn check_src_contain_target_function(
     let output = grep_cmd.output().await?;
     // return grep's exit status code
     let status = output.status;
-    if status.success() {
-        return Ok(true);
-    } else {
+    if !status.success() {
         // grep will return non-zero status code when it does not find matching content, here is a special handling
         if output.stdout.is_empty() && status.code() == Some(1) {
             return Ok(false);
@@ -141,4 +142,5 @@ pub(crate) async fn check_src_contain_target_function(
             ));
         }
     }
+    Ok(true)
 }

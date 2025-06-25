@@ -16,7 +16,7 @@ pub(crate) struct CrateWorkspace {
 impl CrateWorkspace {
     /// create a child crate workspace from a parent version directory
     /// $WORKING_DIR/X-workspace/X-1.0.0/Y-workspace
-    pub async fn create_from_parent(parent: &CrateVersionDir, name: String,) -> Self {
+    pub async fn create_from_parent(parent: &CrateVersionDir, name: String) -> Self {
         let path = parent.path.join(format!("{}-workspace", name));
         fs::create_dir_all(&path).await.unwrap();
         Self {
@@ -41,7 +41,7 @@ impl CrateVersionDir {
         let path = PathBuf::from(
             &std::env::var("WORKING_DIR").unwrap_or_else(|_| "./downloads/working".to_string()),
         )
-        .join(&cve_id);
+        .join(cve_id);
         fs::create_dir_all(&path).await.unwrap();
         Self {
             cve_id: cve_id.to_owned(),
@@ -106,11 +106,8 @@ impl CrateWorkspaceFileSystemManager {
             .get(parent)
             .ok_or(anyhow::anyhow!("parent workspace not found"))?;
 
-        let crate_workspace = CrateWorkspace::create_from_parent(
-            parent_version_dir,
-            crate_name.to_string(),
-        )
-        .await;
+        let crate_workspace =
+            CrateWorkspace::create_from_parent(parent_version_dir, crate_name.to_string()).await;
         self.workspaces.push(crate_workspace.clone());
 
         let version_dir = CrateVersionDir::create(

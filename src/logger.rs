@@ -1,8 +1,12 @@
+use chrono::Local;
 use tracing_log::LogTracer;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
-pub(crate) fn log_init() -> tracing_appender::non_blocking::WorkerGuard {
+pub(crate) fn log_init(
+    log_file_dir: &str,
+    cve_id: &str,
+) -> tracing_appender::non_blocking::WorkerGuard {
     LogTracer::builder()
         .init()
         .expect("Failed to initialize LogTracer");
@@ -14,14 +18,17 @@ pub(crate) fn log_init() -> tracing_appender::non_blocking::WorkerGuard {
         .with_level(true)
         .with_writer(std::io::stdout);
 
-    let file_appender = tracing_appender::rolling::daily("logs", "cross_pro_cg.log");
+    // 生成带日期的文件名
+    let now = Local::now();
+    let file_name = format!("{}_{}.log", now.format("%Y-%m-%d_%H-%M-%S"), cve_id);
+    let file_appender = tracing_appender::rolling::never(log_file_dir, file_name);
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
     let file_layer = tracing_subscriber::fmt::layer()
         .with_level(true)
         .with_writer(non_blocking);
 
     let collector = tracing_subscriber::registry()
-        .with(env_filter) // 关键：加上 env_filter
+        .with(env_filter)
         .with(std_layer)
         .with(file_layer);
 
