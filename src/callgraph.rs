@@ -6,6 +6,7 @@ use tokio::fs as tokio_fs;
 use tokio::process::Command;
 use tokio::time::timeout;
 use tracing::warn;
+use serde_json;
 
 use crate::model::Krate;
 
@@ -70,12 +71,13 @@ pub(crate) async fn run_function_analysis(
         "--output-dir",
         &target_dir.to_string_lossy(),
     ]);
+    tracing::info!("call-cg4rs command: {:?}", cmd);
 
     // 设置超时时间为 4 分钟
     let call_cg_result = match timeout(Duration::from_secs(240), cmd.output()).await {
         Ok(Ok(output)) => output,
         Ok(Err(e)) => {
-            warn!("call-cg4rs failed: {}, skip the crate", e);
+            warn!("call-cg4rs failed: {:?}, skip the crate", e);
             return Ok(None);
         }
         Err(_) => {
@@ -90,24 +92,32 @@ pub(crate) async fn run_function_analysis(
         return Ok(None);
     }
 
-    // 工具生成的 callers.json 路径
-    let callers_json_path = target_dir.join("callers.json");
-    if !callers_json_path.exists() {
+    // 新增：查找 caller-*.json 文件
+    let mut dir = tokio_fs::read_dir(&target_dir).await?;
+    let mut files_vec = Vec::new();
+    while let Some(entry) = dir.next_entry().await? {
+        let path = entry.path();
+        if let Some(fname) = path.file_name().and_then(|n| n.to_str()) {
+            if fname.starts_with("callers-") && fname.ends_with(".json") {
+                let content = tokio_fs::read_to_string(&path).await?;
+                let content_json: serde_json::Value = serde_json::from_str(&content)
+                    .unwrap_or(serde_json::Value::String(content));
+                let json_obj = serde_json::json!({
+                    "file": fname,
+                    "file-content": content_json
+                });
+                files_vec.push(json_obj);
+            }
+        }
+    }
+    if files_vec.is_empty() {
         warn!(
-            "callers.json file not found in {}, skip the crate",
+            "caller(s)-*.json file not found in {}, skip the crate",
             target_dir.display()
         );
         return Ok(None);
     }
-
-    // read callers.json content
-    let callers_content = tokio_fs::read_to_string(&callers_json_path)
-        .await
-        .context(format!(
-            "read callers.json file failed: {}",
-            callers_json_path.display()
-        ))?;
-
+    let callers_content = serde_json::to_string_pretty(&files_vec)?;
     Ok(Some(callers_content))
 }
 
