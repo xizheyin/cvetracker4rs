@@ -2,3 +2,4 @@
 /logs
 /analysis_results
 .env
+*.txt

@@ -49,7 +49,7 @@ impl Krate {
         // now, we have a copy of the crate in the
         // working directory, which can be modified anyway
         krate
-            .cp_crate_to_working_dir(fs_manager)
+            .cp_crate_to_working_dir()
             .await
             .expect("Failed to copy crate to working directory");
         Ok(krate)
@@ -305,14 +305,9 @@ impl Krate {
 
     async fn cp_crate_to_working_dir(
         &self,
-        fs_manager: Arc<Mutex<CrateWorkspaceFileSystemManager>>,
     ) -> Result<()> {
         let extract_dir = self.get_extract_crate_dir_path().await;
-        let working_dir = fs_manager
-            .lock()
-            .await
-            .get_krate_working_dir(self.dir_idx)
-            .await;
+        let working_dir = self.get_working_dir().await;
 
         tracing::debug!(
             "Copy the crate to the working directory: {} -> {}",

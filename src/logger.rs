@@ -3,7 +3,7 @@ use tracing_log::LogTracer;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
-pub(crate) fn log_init(
+pub fn log_init(
     log_file_dir: &str,
     cve_id: &str,
 ) -> tracing_appender::non_blocking::WorkerGuard {

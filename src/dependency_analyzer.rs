@@ -5,7 +5,7 @@ use crate::{callgraph, utils};
 use anyhow::Result;
 use futures::stream::{self as futures_stream, StreamExt};
 use semver::Version;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -71,12 +71,28 @@ impl DependencyAnalyzer {
         mut queue: VecDeque<Arc<BFSNode>>,
         target_function_paths: &str,
     ) -> Result<()> {
+        let mut visited = HashSet::new();
         while !queue.is_empty() {
             let current_level = utils::pop_bfs_level(&mut queue).await;
             let results = self
                 .process_bfs_level(current_level, target_function_paths)
                 .await?;
-            utils::push_next_level(&mut queue, results).await;
+
+            // filter out the nodes that have been visited
+            let results_without_visited = results
+                .into_iter()
+                .filter(|node| {
+                    let key = (node.krate.name.clone(), node.krate.version.clone());
+                    if visited.contains(&key) {
+                        false
+                    } else {
+                        visited.insert(key);
+                        true
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            utils::push_next_level(&mut queue, results_without_visited).await;
         }
         Ok(())
     }
@@ -145,7 +161,7 @@ impl DependencyAnalyzer {
                 }
             })
             .buffer_unordered(
-                env::var("MAX_CONCURRENT_TASKS")
+                env::var("MAX_CONCURRENT_DEP_DOWNLOAD")
                     .unwrap_or("32".to_string())
                     .parse::<usize>()
                     .unwrap(),
@@ -196,7 +212,7 @@ impl DependencyAnalyzer {
                         bfs_node.krate.name, bfs_node.krate.version, cveid
                     );
                     let filepath = result_dir.join(filename);
-                    println!("Result will be written to: {:?}", filepath);
+                    tracing::info!("Result will be written to: {:?}", filepath);
                     fs::write(filepath, &analysis_result)?;
                     return Ok(true);
                 }

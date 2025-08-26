@@ -4,6 +4,7 @@ mod dependency_analyzer;
 mod dir;
 mod logger;
 mod model;
+mod stats;
 mod utils;
 
 use dependency_analyzer::DependencyAnalyzer;
@@ -13,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cve_id = "CVE-2025-31130";
     let crate_name = "gix-features";
     let version_range = "<0.41.0";
-    let target_function_paths = "gix_features::hash::Hasher::digest";
+    let target_function_paths = "gix_features::hash::Hasher::digest,gix_features::hash::Hasher::update,gix_features::hash::Write::flush,gix_features::hash::Write::new,gix_features::hash::Write::write,gix_features::hash::bytes,gix_features::hash::bytes_of_filegix_features::hash::bytes_with_hasher,gix_features::hash::hasher";
 
     dotenv::dotenv().ok();
     let _guard = logger::log_init("logs", cve_id);
@@ -23,6 +24,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     analyzer
         .analyze(crate_name, version_range, target_function_paths)
         .await?;
+
+    // After analysis, compute aggregated stats for the CVE
+    stats::compute_and_write_stats(cve_id).await?;
 
     tracing::info!("Dependency analyzer finished successfully");
     Ok(())

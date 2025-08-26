@@ -1,13 +1,12 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
+use serde_json;
 use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::fs as tokio_fs;
 use tokio::process::Command;
-use tokio::time::timeout;
+use tokio::time::sleep;
 use tracing::warn;
-use serde_json;
-
 use crate::model::Krate;
 
 /// Directory guard
@@ -61,35 +60,44 @@ pub(crate) async fn run_function_analysis(
         src_dir.display()
     );
 
-    let mut cmd = Command::new("call-cg4rs");
-    cmd.args([
-        "--find-callers",
-        function_paths,
-        "--json-output",
-        "--manifest-path",
-        &cargo_toml_path.to_string_lossy(),
-        "--output-dir",
-        &target_dir.to_string_lossy(),
-    ]);
-    tracing::info!("call-cg4rs command: {:?}", cmd);
+    let mut child = Command::new("call-cg4rs")
+        .args([
+            "--find-callers",
+            function_paths,
+            "--json-output",
+            "--manifest-path",
+            &cargo_toml_path.to_string_lossy(),
+            "--output-dir",
+            &target_dir.to_string_lossy(),
+        ])
+        .spawn()?;
 
-    // 设置超时时间为 4 分钟
-    let call_cg_result = match timeout(Duration::from_secs(240), cmd.output()).await {
-        Ok(Ok(output)) => output,
-        Ok(Err(e)) => {
-            warn!("call-cg4rs failed: {:?}, skip the crate", e);
-            return Ok(None);
+    // 4分钟超时
+    let timeout = sleep(Duration::from_secs(240));
+    tokio::pin!(timeout);
+
+    let exit = tokio::select! {
+        exit = child.wait() => {
+            exit.map_err(|e| anyhow::anyhow!(e))
         }
-        Err(_) => {
-            warn!("call-cg4rs analysis timeout (4 minutes), skip the crate");
-            return Ok(None);
+        _ = &mut timeout => {
+            warn!("call-cg4rs analysis timeout (4 minutes), killing process, skip the crate");
+            let _ = child.kill().await;
+            Err(anyhow::anyhow!("call-cg4rs analysis timeout (4 minutes), killing process, skip the crate"))
         }
     };
 
-    if !call_cg_result.status.success() {
-        let stderr = String::from_utf8_lossy(&call_cg_result.stderr);
-        warn!("call-cg4rs failed: {}, skip the crate", stderr);
-        return Ok(None);
+    match exit {
+        Ok(exit) => {
+            if !exit.success() {
+                warn!("call-cg4rs failed: {:?}, skip the crate", exit);
+                return Ok(None);
+            }
+        }
+        Err(e) => {
+            warn!("call-cg4rs failed: {:?}, skip the crate", e);
+            return Ok(None);
+        }
     }
 
     // 新增：查找 caller-*.json 文件
@@ -100,8 +108,8 @@ pub(crate) async fn run_function_analysis(
         if let Some(fname) = path.file_name().and_then(|n| n.to_str()) {
             if fname.starts_with("callers-") && fname.ends_with(".json") {
                 let content = tokio_fs::read_to_string(&path).await?;
-                let content_json: serde_json::Value = serde_json::from_str(&content)
-                    .unwrap_or(serde_json::Value::String(content));
+                let content_json: serde_json::Value =
+                    serde_json::from_str(&content).unwrap_or(serde_json::Value::String(content));
                 let json_obj = serde_json::json!({
                     "file": fname,
                     "file-content": content_json
