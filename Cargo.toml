@@ -1,5 +1,5 @@
 [package]
-name = "cross_pro_cg"
+name = "cvetracker4rs"
 version = "0.1.0"
 edition = "2021"
 
