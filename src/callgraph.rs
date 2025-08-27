@@ -1,3 +1,4 @@
+use crate::model::Krate;
 use anyhow::Result;
 use serde_json;
 use std::env;
@@ -7,7 +8,6 @@ use tokio::fs as tokio_fs;
 use tokio::process::Command;
 use tokio::time::sleep;
 use tracing::warn;
-use crate::model::Krate;
 
 /// Directory guard
 /// when running the function analysis tool, the current directory will be changed to the working directory of the crate
@@ -34,6 +34,8 @@ impl Drop for DirGuard {
 pub(crate) async fn run_function_analysis(
     krate: &Krate,
     function_paths: &str,
+    cve_id: &str,
+    logs_dir: &PathBuf,
 ) -> Result<Option<String>> {
     let crate_dir = krate.get_working_dir().await;
     let cargo_toml_path = krate.get_cargo_toml_path().await;
@@ -60,7 +62,12 @@ pub(crate) async fn run_function_analysis(
         src_dir.display()
     );
 
+    let (log_file, error_output_file) = crate::logger::create_log_file(&logs_dir, krate, cve_id)
+        .await
+        .unwrap();
+
     let mut child = Command::new("call-cg4rs")
+        .env("RUST_LOG", "info")
         .args([
             "--find-callers",
             function_paths,
@@ -70,6 +77,8 @@ pub(crate) async fn run_function_analysis(
             "--output-dir",
             &target_dir.to_string_lossy(),
         ])
+        .stdout(log_file)
+        .stderr(error_output_file)
         .spawn()?;
 
     // 4分钟超时
@@ -90,12 +99,18 @@ pub(crate) async fn run_function_analysis(
     match exit {
         Ok(exit) => {
             if !exit.success() {
-                warn!("call-cg4rs failed: {:?}, skip the crate", exit);
+                warn!(
+                    "call-cg4rs failed for {}: {:?}, check logs in logs directory",
+                    krate.name, exit
+                );
                 return Ok(None);
             }
         }
         Err(e) => {
-            warn!("call-cg4rs failed: {:?}, skip the crate", e);
+            warn!(
+                "call-cg4rs failed for {}: {:?}, check logs in logs directory",
+                krate.name, e
+            );
             return Ok(None);
         }
     }

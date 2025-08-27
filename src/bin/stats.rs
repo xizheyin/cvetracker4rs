@@ -15,4 +15,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Stats completed for {}", cve_id);
     Ok(())
 }
-

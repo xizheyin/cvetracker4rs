@@ -10,6 +10,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
+use std::path::PathBuf;
 use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
@@ -43,6 +44,14 @@ impl DependencyAnalyzer {
         version_range: &str,
         function_paths: &str,
     ) -> Result<()> {
+        // 为每个进程创建唯一的日志文件名
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+        let logs_dir = std::env::current_dir()
+            .unwrap()
+            .join(format!("logs_cg4rs/{}_{}", self.cve_id, timestamp));
         let versions = self.database.query_crate_versions(crate_name).await?;
         // select oldest and newest versions that match the version range
         let two_end_versions: Vec<(usize, Version)> =
@@ -61,7 +70,7 @@ impl DependencyAnalyzer {
             bfs_queue.push_back(bfs_node);
         }
 
-        self.bfs(bfs_queue, function_paths).await?;
+        self.bfs(bfs_queue, function_paths, &logs_dir).await?;
 
         Ok(())
     }
@@ -70,12 +79,13 @@ impl DependencyAnalyzer {
         &self,
         mut queue: VecDeque<Arc<BFSNode>>,
         target_function_paths: &str,
+        logs_dir: &PathBuf,
     ) -> Result<()> {
         let mut visited = HashSet::new();
         while !queue.is_empty() {
             let current_level = utils::pop_bfs_level(&mut queue).await;
             let results = self
-                .process_bfs_level(current_level, target_function_paths)
+                .process_bfs_level(current_level, target_function_paths, &logs_dir)
                 .await?;
 
             // filter out the nodes that have been visited
@@ -102,12 +112,13 @@ impl DependencyAnalyzer {
         &self,
         current_level: Vec<Arc<BFSNode>>,
         target_function_paths: &str,
+        logs_dir: &PathBuf,
     ) -> Result<Vec<Arc<BFSNode>>> {
         let analyzer = Arc::new(self.clone());
         Ok(futures_stream::iter(current_level)
             .map(async |bfs_node| {
                 analyzer
-                    .process_single_bfs_node(bfs_node, target_function_paths)
+                    .process_single_bfs_node(bfs_node, target_function_paths, &logs_dir)
                     .await
             })
             .buffer_unordered(
@@ -128,10 +139,16 @@ impl DependencyAnalyzer {
         &self,
         bfs_node: Arc<BFSNode>,
         target_function_paths: &str,
+        logs_dir: &PathBuf,
     ) -> Result<Vec<Arc<BFSNode>>> {
         // check if the node is vulnerable
         if !self
-            .check_bfs_node_vulnerable(bfs_node.clone(), target_function_paths, &self.cve_id)
+            .check_bfs_node_vulnerable(
+                bfs_node.clone(),
+                target_function_paths,
+                &self.cve_id,
+                &logs_dir,
+            )
             .await?
         {
             return Ok(vec![]);
@@ -178,10 +195,26 @@ impl DependencyAnalyzer {
         bfs_node: Arc<BFSNode>,
         target_function_paths: &str,
         cveid: &str,
+        logs_dir: &PathBuf,
     ) -> Result<bool> {
-        tracing::info!("Check if the node is vulnerable: {}", bfs_node.krate.name);
+        let krate_name = &bfs_node.krate.name;
+        let krate_version = &bfs_node.krate.version;
+
+        tracing::info!(
+            "[{}:{}] Starting vulnerability check",
+            krate_name,
+            krate_version
+        );
         let working_dir = bfs_node.krate.get_working_dir().await;
         if let Some(parent) = &bfs_node.parent {
+            tracing::debug!(
+                "[{}:{}] Patching dependency {}:{}",
+                krate_name,
+                krate_version,
+                parent.krate.name,
+                parent.krate.version
+            );
+
             utils::patch_dep(&working_dir, &parent.krate.name, &parent.krate.version)
                 .await
                 .map_err(|e| {
@@ -192,16 +225,22 @@ impl DependencyAnalyzer {
                     )
                 })?;
 
-            tracing::debug!("Analyze function calls for {}", bfs_node.krate.name);
-            let analysis_result =
-                callgraph::run_function_analysis(&bfs_node.krate, target_function_paths).await;
+            tracing::info!("[{cveid}:{krate_name}:{krate_version}] Starting function analysis");
+            let analysis_result = callgraph::run_function_analysis(
+                &bfs_node.krate,
+                target_function_paths,
+                &cveid,
+                &logs_dir,
+            )
+            .await;
+
+            tracing::debug!("[{cveid}:{krate_name}:{krate_version}] Cleaning cargo cache");
             bfs_node.krate.cargo_clean().await?;
 
             match analysis_result {
                 Ok(Some(analysis_result)) => {
                     tracing::info!(
-                        "!!!!!!!!!!!!!!!!!!!!!!!!!!!Function analysis result: {}",
-                        analysis_result
+                        "[{cveid}:{krate_name}:{krate_version}] Function analysis completed successfully"
                     );
                     let result_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("analysis_results");
                     if !result_dir.exists() {
@@ -212,16 +251,22 @@ impl DependencyAnalyzer {
                         bfs_node.krate.name, bfs_node.krate.version, cveid
                     );
                     let filepath = result_dir.join(filename);
-                    tracing::info!("Result will be written to: {:?}", filepath);
+                    tracing::info!(
+                        "[{cveid}:{krate_name}:{krate_version}] Writing result to: {:?}",
+                        filepath
+                    );
                     fs::write(filepath, &analysis_result)?;
                     return Ok(true);
                 }
                 Ok(None) => {
-                    tracing::info!("No function analysis result, skip the crate");
+                    tracing::info!("[{cveid}:{krate_name}:{krate_version}] No function analysis result, skipping crate");
                     return Ok(false);
                 }
                 Err(e) => {
-                    tracing::error!("Function analysis failed: {}", e);
+                    tracing::error!(
+                        "[{cveid}:{krate_name}:{krate_version}] Function analysis failed: {}",
+                        e
+                    );
                     return Ok(false);
                 }
             }

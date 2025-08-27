@@ -86,7 +86,9 @@ pub async fn compute_and_write_stats(cve_id: &str) -> Result<()> {
             Some(s) => s,
             None => continue,
         };
-        let Some(subject) = strip_cve_suffix(fname, cve_id) else { continue };
+        let Some(subject) = strip_cve_suffix(fname, cve_id) else {
+            continue;
+        };
 
         let content = match tokio_fs::read_to_string(&path).await {
             Ok(s) => s,
@@ -104,11 +106,16 @@ pub async fn compute_and_write_stats(cve_id: &str) -> Result<()> {
             }
         };
 
-        if !json.is_array() { continue; }
+        if !json.is_array() {
+            continue;
+        }
 
         let subject_entry = subjects_map
             .entry(subject.clone())
-            .or_insert_with(|| SubjectStats { subject: subject.clone(), ..Default::default() });
+            .or_insert_with(|| SubjectStats {
+                subject: subject.clone(),
+                ..Default::default()
+            });
 
         global.total_subjects += 1;
 
@@ -118,7 +125,9 @@ pub async fn compute_and_write_stats(cve_id: &str) -> Result<()> {
             let func_key = function_from_file_key(file_key);
 
             let file_content = file_obj.get("file-content");
-            let Some(file_content) = file_content else { continue };
+            let Some(file_content) = file_content else {
+                continue;
+            };
             let callers = file_content
                 .get("callers")
                 .and_then(|v| v.as_array())
@@ -201,7 +210,10 @@ pub async fn compute_and_write_stats(cve_id: &str) -> Result<()> {
     let mut md = String::new();
     md.push_str(&format!("# Stats for {}\n\n", cve_id));
     md.push_str(&format!("- Total subjects: {}\n", global.total_subjects));
-    md.push_str(&format!("- Total function files: {}\n", global.total_function_result_files));
+    md.push_str(&format!(
+        "- Total function files: {}\n",
+        global.total_function_result_files
+    ));
     md.push_str(&format!("- Total callers: {}\n", global.total_callers));
     md.push_str("\n## Top subjects by callers\n\n");
     for (name, cnt) in &global.top_subjects_by_callers {
@@ -224,4 +236,3 @@ pub async fn compute_and_write_stats(cve_id: &str) -> Result<()> {
     tracing::info!("stats written: {:?}, {:?}", out_json_path, out_md_path);
     Ok(())
 }
-

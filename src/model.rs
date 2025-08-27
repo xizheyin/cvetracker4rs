@@ -24,7 +24,7 @@ impl Krate {
     /// 2. download and unzip the crate
     /// 3. copy it to the working directory
     /// 4. return the krate object
-    pub async fn create(
+    pub(crate) async fn create(
         name: &str,
         version: &str,
         parent_version_dir_index: CrateVersionDirIndex,
@@ -303,9 +303,7 @@ impl Krate {
             .unwrap_or_else(|| anyhow::anyhow!("fetch_and_unzip_crate failed for unknown reason")))
     }
 
-    async fn cp_crate_to_working_dir(
-        &self,
-    ) -> Result<()> {
+    async fn cp_crate_to_working_dir(&self) -> Result<()> {
         let extract_dir = self.get_extract_crate_dir_path().await;
         let working_dir = self.get_working_dir().await;
 
