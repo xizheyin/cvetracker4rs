@@ -1,17 +1,4 @@
-mod academic_report;
-mod callgraph;
-mod database;
-mod dependency_analyzer;
-mod dependency_graph;
-mod dir;
-mod enhanced_stats;
-mod logger;
-mod model;
-mod stats;
-mod utils;
-mod process;
-
-use dependency_analyzer::DependencyAnalyzer;
+use libcvetracker::dependency_analyzer::DependencyAnalyzer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,8 +16,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .analyze(crate_name, version_range, target_function_paths)
         .await?;
 
-    // After analysis, compute aggregated stats for the CVE
-    stats::compute_and_write_stats(cve_id).await?;
+    // // After analysis, compute aggregated stats for the CVE
+    // stats::compute_and_write_stats(cve_id).await?;
     
     // Compute enhanced stats for academic research
     tracing::info!("Computing enhanced statistics for academic analysis...");

@@ -229,7 +229,6 @@ impl DependencyAnalyzer {
             let analysis_result = callgraph::run_function_analysis(
                 &bfs_node.krate,
                 target_function_paths,
-                &cveid,
                 &logs_dir,
             )
             .await;

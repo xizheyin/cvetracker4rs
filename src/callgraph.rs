@@ -1,5 +1,7 @@
 use crate::model::Krate;
+use crate::process::graceful_kill_process;
 use anyhow::Result;
+
 use serde_json;
 use std::env;
 use std::path::PathBuf;
@@ -34,7 +36,6 @@ impl Drop for DirGuard {
 pub(crate) async fn run_function_analysis(
     krate: &Krate,
     function_paths: &str,
-    cve_id: &str,
     logs_dir: &PathBuf,
 ) -> Result<Option<String>> {
     let crate_dir = krate.get_working_dir().await;
@@ -62,7 +63,7 @@ pub(crate) async fn run_function_analysis(
         src_dir.display()
     );
 
-    let (log_file, error_output_file) = crate::logger::create_log_file(&logs_dir, krate, cve_id)
+    let (log_file, error_output_file) = crate::logger::create_log_file(&logs_dir, krate)
         .await
         .unwrap();
 
@@ -81,18 +82,15 @@ pub(crate) async fn run_function_analysis(
         .stderr(error_output_file)
         .spawn()?;
 
-    // 4分钟超时
-    let timeout = sleep(Duration::from_secs(240));
-    tokio::pin!(timeout);
-
     let exit = tokio::select! {
         exit = child.wait() => {
             exit.map_err(|e| anyhow::anyhow!(e))
         }
-        _ = &mut timeout => {
-            warn!("call-cg4rs analysis timeout (4 minutes), killing process, skip the crate");
-            let _ = child.kill().await;
-            Err(anyhow::anyhow!("call-cg4rs analysis timeout (4 minutes), killing process, skip the crate"))
+        _ = sleep(Duration::from_secs(240)) => {
+            warn!("call-cg4rs analysis timeout (4 minutes), attempting graceful shutdown");
+            // 使用优雅终止：先 SIGTERM，10秒后如果还没退出则 SIGKILL
+            let _ = graceful_kill_process(&mut child, 10).await;
+            Err(anyhow::anyhow!("call-cg4rs analysis timeout (4 minutes), process terminated"))
         }
     };
 

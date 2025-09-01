@@ -43,7 +43,6 @@ pub fn log_init(log_file_dir: &str, cve_id: &str) -> tracing_appender::non_block
 pub async fn create_log_file(
     logs_dir: &PathBuf,
     krate: &Krate,
-    cve_id: &str,
 ) -> anyhow::Result<(std::fs::File, std::fs::File)> {
     // 创建日志目录（使用绝对路径）
     tokio_fs::create_dir_all(&logs_dir).await?;
