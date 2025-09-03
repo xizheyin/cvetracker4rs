@@ -1,7 +1,7 @@
+use indicatif::{ProgressBar, ProgressStyle};
 use libcvetracker::dependency_analyzer::DependencyAnalyzer;
 use libcvetracker::logger;
 use std::env;
-use indicatif::{ProgressBar, ProgressStyle};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,7 +39,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     libcvetracker::stats::compute_and_write_stats(cve_id).await?;
 
     spinner.finish_with_message("分析完成");
-    
 
     tracing::info!("Dependency analyzer finished successfully");
     Ok(())

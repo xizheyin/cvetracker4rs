@@ -9,9 +9,8 @@ use std::collections::{HashSet, VecDeque};
 use std::env;
 use std::fs;
 use std::path::Path;
-use std::sync::Arc;
 use std::path::PathBuf;
-use std::time::SystemTime;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
@@ -227,12 +226,9 @@ impl DependencyAnalyzer {
                 })?;
 
             tracing::info!("[{cveid}:{krate_name}:{krate_version}] Starting function analysis");
-            let analysis_result = callgraph::run_function_analysis(
-                &bfs_node.krate,
-                target_function_paths,
-                &logs_dir,
-            )
-            .await;
+            let analysis_result =
+                callgraph::run_function_analysis(&bfs_node.krate, target_function_paths, &logs_dir)
+                    .await;
 
             tracing::debug!("[{cveid}:{krate_name}:{krate_version}] Cleaning cargo cache");
             bfs_node.krate.cargo_clean().await?;
@@ -242,15 +238,14 @@ impl DependencyAnalyzer {
                     tracing::info!(
                         "[{cveid}:{krate_name}:{krate_version}] Function analysis completed successfully"
                     );
-                    let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis();
-                    let result_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("analysis_results").join(cveid);
+                    let result_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("analysis_results")
+                        .join(cveid);
                     if !result_dir.exists() {
                         fs::create_dir_all(&result_dir)?;
                     }
-                    let filename = format!(
-                        "{}-{}-{}.txt",
-                        bfs_node.krate.name, bfs_node.krate.version, cveid
-                    );
+                    let filename =
+                        format!("{}-{}.txt", bfs_node.krate.name, bfs_node.krate.version);
                     let filepath = result_dir.join(filename);
                     tracing::info!(
                         "[{cveid}:{krate_name}:{krate_version}] Writing result to: {:?}",

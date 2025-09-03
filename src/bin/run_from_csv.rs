@@ -1,7 +1,7 @@
+use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use indicatif::{ProgressBar, ProgressStyle};
 
 #[derive(Debug, serde::Deserialize)]
 struct Row {
@@ -24,7 +24,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let has_header = args
         .iter()
         .find(|s| s.starts_with("--has-header="))
-        .map(|s| s.trim_start_matches("--has-header=").parse::<bool>().unwrap_or(true))
+        .map(|s| {
+            s.trim_start_matches("--has-header=")
+                .parse::<bool>()
+                .unwrap_or(true)
+        })
         .unwrap_or(true);
 
     let mut rdr_builder = csv::ReaderBuilder::new();
@@ -63,8 +67,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             row.cve_id, row.crate_name, row.version_range, row.target_function_paths
         );
 
-        let analyzer = libcvetracker::dependency_analyzer::DependencyAnalyzer::new(&row.cve_id)
-            .await?;
+        let analyzer =
+            libcvetracker::dependency_analyzer::DependencyAnalyzer::new(&row.cve_id).await?;
         analyzer
             .analyze(
                 &row.crate_name,
@@ -76,16 +80,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         libcvetracker::stats::compute_and_write_stats(&row.cve_id).await?;
 
         // 每个任务结束后给出完成提示
-        pb.set_message(format!(
-            "完成: {} ({}/{})",
-            row.cve_id,
-            idx + 1,
-            total
-        ));
+        pb.set_message(format!("完成: {} ({}/{})", row.cve_id, idx + 1, total));
     }
     pb.finish_with_message("全部完成");
 
     Ok(())
 }
-
-

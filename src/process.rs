@@ -1,15 +1,17 @@
-
 use nix::sys::signal::{self, Signal};
 use nix::unistd::Pid;
-use tracing::warn;
 use tokio::time::{sleep, Duration};
+use tracing::warn;
 
 /// 优雅地终止进程
 /// 首先发送 SIGTERM 信号，等待指定时间后如果进程仍未退出，则发送 SIGKILL 强制终止
-pub async fn graceful_kill_process(child: &mut tokio::process::Child, graceful_timeout_secs: u64) -> anyhow::Result<()> {
+pub async fn graceful_kill_process(
+    child: &mut tokio::process::Child,
+    graceful_timeout_secs: u64,
+) -> anyhow::Result<()> {
     if let Some(pid) = child.id() {
         let nix_pid = Pid::from_raw(pid as i32);
-        
+
         // 1. 首先发送 SIGTERM 信号
         warn!("Sending SIGTERM to process {}", pid);
         if let Err(e) = signal::kill(nix_pid, Signal::SIGTERM) {
@@ -18,11 +20,11 @@ pub async fn graceful_kill_process(child: &mut tokio::process::Child, graceful_t
             let _ = child.kill().await;
             return Ok(());
         }
-        
+
         // 2. 等待进程优雅退出
         let graceful_timeout = sleep(Duration::from_secs(graceful_timeout_secs));
         tokio::pin!(graceful_timeout);
-        
+
         tokio::select! {
             // 进程在优雅时间内退出
             exit_result = child.wait() => {
@@ -47,6 +49,6 @@ pub async fn graceful_kill_process(child: &mut tokio::process::Child, graceful_t
         warn!("Process has no PID, using direct kill");
         let _ = child.kill().await;
     }
-    
+
     Ok(())
 }
