@@ -1,31 +1,45 @@
 use libcvetracker::dependency_analyzer::DependencyAnalyzer;
+use libcvetracker::logger;
+use std::env;
+use indicatif::{ProgressBar, ProgressStyle};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cve_id = "CVE-2025-31130";
-    let crate_name = "gix-features";
-    let version_range = "<0.41.0";
-    let target_function_paths = "gix_features::hash::Hasher::digest,gix_features::hash::Hasher::update,gix_features::hash::Write::flush,gix_features::hash::Write::new,gix_features::hash::Write::write,gix_features::hash::bytes,gix_features::hash::bytes_of_filegix_features::hash::bytes_with_hasher,gix_features::hash::hasher";
+    let args: Vec<String> = env::args().collect();
+    let cve_id = args.get(1).map(|s| s.as_str()).unwrap_or("CVE-2025-31130");
+    let crate_name = args.get(2).map(|s| s.as_str()).unwrap_or("gix-features");
+    let version_range = args.get(3).map(|s| s.as_str()).unwrap_or("<0.41.0");
+    let target_function_paths = args.get(4).map(|s| s.as_str()).unwrap_or(
+        "gix_features::hash::Hasher::digest,gix_features::hash::Hasher::update,gix_features::hash::Write::flush,gix_features::hash::Write::new,gix_features::hash::Write::write,gix_features::hash::bytes,gix_features::hash::bytes_of_filegix_features::hash::bytes_with_hasher,gix_features::hash::hasher",
+    );
 
     dotenv::dotenv().ok();
     let _guard = logger::log_init("logs", cve_id);
 
     tracing::info!("Start to run the dependency analyzer\ncve_id: {}\ncrate_name: {}\nversion_range: {}\ntarget_function_path: {}\n", cve_id, crate_name, version_range, target_function_paths);
+
+    // spinner for overall progress
+    let spinner = ProgressBar::new_spinner();
+    spinner.set_style(
+        ProgressStyle::with_template("{spinner} {msg}")
+            .unwrap()
+            .tick_chars("|/-\\"),
+    );
+    spinner.enable_steady_tick(std::time::Duration::from_millis(120));
+    spinner.set_message("初始化分析器...");
     let analyzer = DependencyAnalyzer::new(cve_id).await?;
+    spinner.set_message("开始依赖分析...");
     analyzer
         .analyze(crate_name, version_range, target_function_paths)
         .await?;
 
+    spinner.set_message("计算统计信息...");
+
     // // After analysis, compute aggregated stats for the CVE
-    // stats::compute_and_write_stats(cve_id).await?;
+    libcvetracker::stats::compute_and_write_stats(cve_id).await?;
+
+    spinner.finish_with_message("分析完成");
     
-    // Compute enhanced stats for academic research
-    tracing::info!("Computing enhanced statistics for academic analysis...");
-    enhanced_stats::compute_enhanced_stats(cve_id).await?;
-    
-    // Generate academic report for paper writing
-    tracing::info!("Generating academic research report...");
-    academic_report::generate_academic_report(cve_id).await?;
 
     tracing::info!("Dependency analyzer finished successfully");
     Ok(())
