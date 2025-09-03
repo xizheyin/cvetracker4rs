@@ -20,6 +20,50 @@
 cargo build --release
 ```
 
+### 准备 crates.io 数据库（必需）
+本项目依赖 PostgreSQL 中的 crates.io 数据快照（包含 `crates`、`versions`、`dependencies` 等表）。请先在本地/服务器恢复官方数据 dump。
+
+1) 安装 PostgreSQL（建议 13+）
+
+2) 创建用户与数据库（示例）
+```bash
+# 使用 postgres 超级用户创建
+psql -h localhost -U postgres -c "CREATE ROLE rust LOGIN PASSWORD 'rust';"
+psql -h localhost -U postgres -c "CREATE DATABASE crates_io_db OWNER rust;"
+```
+
+3) 下载 crates.io 数据库 dump（官方公开快照）
+- 以下仅供参考，具体怎么建数据库，crates-io dump的数据里有readme，主要参考那个
+- 例如：从 crates.io 提供的数据库快照获取 dump 压缩包（定期更新）
+
+4) 恢复 dump 到数据库
+- 如果是 SQL 文件：
+```bash
+psql -h localhost -U rust -d crates_io_db -f crates-io-dump.sql
+```
+- 如果是自包含 dump（.dump/.tar）：
+```bash
+pg_restore -h localhost -U rust -d crates_io_db \
+  --clean --if-exists --no-owner --no-privileges crates-io-dump.tar
+```
+
+5) 验证表是否存在（任选其一）
+```bash
+psql -h localhost -U rust -d crates_io_db -c "SELECT COUNT(*) FROM crates;"
+psql -h localhost -U rust -d crates_io_db -c "SELECT COUNT(*) FROM versions;"
+psql -h localhost -U rust -d crates_io_db -c "SELECT COUNT(*) FROM dependencies;"
+```
+
+6) 对应 .env 配置
+```bash
+PG_HOST=localhost:5432
+PG_USER=rust
+PG_PASSWORD=rust
+PG_DATABASE=crates_io_db
+```
+
+注意：只读访问即可；如遇权限/所有者问题，恢复时可使用 `--no-owner --no-privileges`。本项目只执行只读查询（不会修改数据）。
+
 ### 环境变量（可用 `.env` 配置，已启用 dotenv）
 可以在项目根目录创建 `.env`：
 ```bash
