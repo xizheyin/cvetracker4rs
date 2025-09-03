@@ -8,7 +8,7 @@
 ### 功能特性
 - **依赖回溯与传播分析**：以易受影响的 crate+version 作为起点，沿反向依赖进行 BFS 分析
 - **批量任务处理**：从 CSV 读取多条任务，顺序执行并跟踪进度
-- **统计汇总**：在 `analysis_results/` 基础上生成 `stats-<CVE>.json` 与 `stats-<CVE>.md`
+- **统计汇总**：在 `analysis_results/<CVE>/` 生成 `stats-<CVE>.json` 与 `stats-<CVE>.md`，按 target 函数（`file-content.target`）分组输出每函数的 callers 数、path_constraints 与 path_package_num 的 min/max/avg/分位数（p50/p90/p95/p99）、直方图与 Top 样本
 - **日志分离**：控制台与文件同时输出，分析子流程拥有独立日志目录
 
 ### 环境依赖
@@ -42,7 +42,7 @@ RUST_LOG=info
 ```
 
 ### 目录说明
-- `analysis_results/`：函数调用分析结果与统计报告的输出目录（目前都输出到一个地方，可能不太完善）
+- `analysis_results/<CVE>/`：该 CVE 的函数调用分析结果与统计报告目录
 - `logs/`：主程序日志文件（即当前程序cvetracker或run_from_csv的日志）
 - `logs_cg4rs/<cve>_<ts>/`：子程序cg4rs（函数分析、下载、补丁等）日志，这个是按照cve分类的
 
@@ -77,7 +77,7 @@ CVE-2025-31130,gix-features,<0.41.0,"gix_features::hash::Hasher::digest,gix_feat
 ```
 
 #### 3) 仅统计：`stats`
-对指定 `CVE` 汇总 `analysis_results/` 下已有的分析结果：
+对指定 `CVE` 汇总 `analysis_results/<CVE>/` 下已有的分析结果：
 ```bash
 cargo run --bin stats -- CVE-2025-31130
 ```
@@ -87,9 +87,16 @@ cargo run --bin stats -- CVE-2025-31130
 - `run_from_csv`：显示总进度条，逐项任务（每个 CSV 行）开始与完成时更新消息
 
 ### 输出产物
-- `analysis_results/<crate>-<version>-<CVE>.txt`：每个分析目标的函数调用分析结果
-- `analysis_results/stats-<CVE>.json`：全局统计数据（函数聚合、路径直方图、Top 主体等）
-- `analysis_results/stats-<CVE>.md`：便于阅读的 Markdown 摘要
+- `analysis_results/<CVE>/<crate>-<version>.txt`：单个 subject（crate-version）的函数调用分析结果，JSON 数组；每个元素内 `file-content.target` 为被分析的 target 函数路径，`file-content.callers[*]` 含：
+  - `path_constraints`：从 target 到 caller 的约束数量
+  - `path_package_num`：路径跨越的 package 数量
+- `analysis_results/<CVE>/stats-<CVE>.json`：聚合统计（分 target 函数）。每个函数包含：
+  - `total_callers`、`unique_call_paths`
+  - path_constraints 的 `min/max/avg` 与分位数 `p50/p90/p95/p99`
+  - path_package_num 的 `min/max/avg` 与分位数 `p50/p90/p95/p99`
+  - 每函数直方图：`path_constraints_histogram`、`package_hops_histogram`
+  - Top 样本：`top_callers_by_constraints`、`top_callers_by_package_hops`（含 subject 与 caller_path）
+- `analysis_results/<CVE>/stats-<CVE>.md`：Markdown 摘要（分 target 展示核心指标与直方图/Top 样本）
 
 ### 常见问题
 - 无法连接数据库：检查 `.env` 中的 `PG_*` 配置与 PostgreSQL 网络连通
