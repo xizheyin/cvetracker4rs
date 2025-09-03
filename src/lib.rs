@@ -1,7 +1,6 @@
 pub mod callgraph;
 mod database;
 pub mod dependency_analyzer;
-pub mod dependency_graph;
 mod dir;
 pub mod logger;
 mod model;
