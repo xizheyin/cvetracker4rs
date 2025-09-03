@@ -56,7 +56,7 @@ fn function_from_file_key(file_key: &str) -> String {
 }
 
 pub async fn compute_and_write_stats(cve_id: &str) -> Result<()> {
-    let dir = analysis_results_dir();
+    let dir = analysis_results_dir().join(cve_id);
     if !dir.exists() {
         tracing::info!("analysis_results not found, skip stats");
         return Ok(());

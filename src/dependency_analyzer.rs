@@ -11,6 +11,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 use std::path::PathBuf;
+use std::time::SystemTime;
 use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
@@ -241,7 +242,8 @@ impl DependencyAnalyzer {
                     tracing::info!(
                         "[{cveid}:{krate_name}:{krate_version}] Function analysis completed successfully"
                     );
-                    let result_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("analysis_results");
+                    let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis();
+                    let result_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("analysis_results").join(cveid);
                     if !result_dir.exists() {
                         fs::create_dir_all(&result_dir)?;
                     }
