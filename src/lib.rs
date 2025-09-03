@@ -1,12 +1,10 @@
-pub mod academic_report;
 pub mod callgraph;
 mod database;
 pub mod dependency_analyzer;
 pub mod dependency_graph;
 mod dir;
-pub mod enhanced_stats;
 pub mod logger;
 mod model;
-mod stats;
+pub mod stats;
 mod utils;
 mod process;
