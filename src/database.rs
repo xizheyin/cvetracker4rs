@@ -16,9 +16,9 @@ impl Database {
     pub async fn new() -> Result<Self> {
         // 从环境变量获取数据库连接信息
         let db_host = env::var("PG_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let db_user = env::var("PG_USER").unwrap_or_else(|_| "mega".to_string());
-        let db_pass = env::var("PG_PASSWORD").unwrap_or_else(|_| "mega".to_string());
-        let db_name = env::var("PG_DATABASE").unwrap_or_else(|_| "crates_io_db".to_string());
+        let db_user = env::var("PG_USER").unwrap_or_else(|_| "postgres".to_string());
+        let db_pass = env::var("PG_PASSWORD").unwrap_or_else(|_| "postgres".to_string());
+        let db_name = env::var("PG_DATABASE").unwrap_or_else(|_| "crates_io".to_string());
 
         let connection_string =
             format!("postgres://{}:{}@{}/{}", db_user, db_pass, db_host, db_name);
