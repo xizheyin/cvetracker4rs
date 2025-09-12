@@ -7,7 +7,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     let cve_id = args.get(1).map(|s| s.as_str()).unwrap_or("CVE-2025-31130");
 
-    let _guard = libcvetracker::logger::log_init("logs", cve_id);
+    let log_dir = std::env::var("LOG_DIR").expect("LOG_DIR is not set");
+    let _guard = libcvetracker::logger::Logger::new(log_dir).log_init(cve_id);
     tracing::info!("Running stats-only for {}", cve_id);
 
     libcvetracker::stats::compute_and_write_stats(cve_id).await?;
