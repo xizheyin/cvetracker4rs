@@ -205,7 +205,7 @@ impl DependencyAnalyzer {
             krate_name,
             krate_version
         );
-        let working_dir = bfs_node.krate.get_working_dir().await;
+        let working_src_code_dir = bfs_node.krate.get_working_src_code_dir().await;
         if let Some(parent) = &bfs_node.parent {
             tracing::debug!(
                 "[{}:{}] Patching dependency {}:{}",
@@ -215,15 +215,20 @@ impl DependencyAnalyzer {
                 parent.krate.version
             );
 
-            utils::patch_dep(&working_dir, &parent.krate.name, &parent.krate.version)
-                .await
-                .map_err(|e| {
-                    anyhow::anyhow!(
-                        "Failed to patch dependency in {}: {}",
-                        working_dir.display(),
-                        e
-                    )
-                })?;
+            utils::patch_dep(
+                &working_src_code_dir,
+                &parent.krate.name,
+                &parent.krate.version,
+            )
+            .await
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to patch dependency in {}: {}",
+                    working_src_code_dir.display(),
+                    e
+                )
+            })
+            .unwrap();
 
             tracing::info!("[{cveid}:{krate_name}:{krate_version}] Starting function analysis");
             let analysis_result =

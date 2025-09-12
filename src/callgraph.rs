@@ -6,7 +6,7 @@ use serde_json;
 use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::fs as tokio_fs;
+use tokio::fs::{self as tokio_fs, read_dir};
 use tokio::process::Command;
 use tokio::time::sleep;
 use tracing::warn;
@@ -38,16 +38,19 @@ pub(crate) async fn run_function_analysis(
     function_paths: &str,
     logs_dir: &PathBuf,
 ) -> Result<Option<String>> {
-    let crate_dir = krate.get_working_dir().await;
+    let crate_dir = krate.get_working_src_code_dir().await;
     let cargo_toml_path = krate.get_cargo_toml_path().await;
     let target_dir = krate.get_target_dir().await;
     let src_dir = krate.get_src_dir().await;
 
     tracing::debug!("Run function analysis tool for {}", crate_dir.display());
     // use directory guard to switch and restore directory
-    let _dir_guard = DirGuard::new(&crate_dir).map_err(|e| anyhow::anyhow!(e))?;
+    let _dir_guard = DirGuard::new(&crate_dir)
+        .map_err(|e| anyhow::anyhow!(e))
+        .unwrap();
 
     // check if the src directory contains the target function by grep
+
     if !check_src_contain_target_function(&src_dir.to_string_lossy(), function_paths).await? {
         tracing::info!(
             "Skip the function analysis, because {} does not contain the target function {}",
@@ -80,7 +83,8 @@ pub(crate) async fn run_function_analysis(
         ])
         .stdout(log_file)
         .stderr(error_output_file)
-        .spawn()?;
+        .spawn()
+        .unwrap();
 
     let exit = tokio::select! {
         exit = child.wait() => {
@@ -113,14 +117,31 @@ pub(crate) async fn run_function_analysis(
         }
     }
 
-    // 新增：查找 caller-*.json 文件
-    let mut dir = tokio_fs::read_dir(&target_dir).await?;
+    // Find caller-*.json files
+    // If the target directory does not exist, it's ok
+    // because the call-cg4rs may have skipped analyzing it
+    let mut dir = match tokio_fs::read_dir(&target_dir).await {
+        Ok(dir) => dir,
+        Err(e) => {
+            if read_dir(&crate_dir).await.is_err() {
+                warn!("{}: crate {} does not exist", e, crate_dir.display());
+                return Ok(None);
+            }
+            warn!("{}: target dir{} does not exist", e, target_dir.display());
+            return Ok(None);
+        }
+    };
     let mut files_vec = Vec::new();
-    while let Some(entry) = dir.next_entry().await? {
+    while let Some(entry) = dir.next_entry().await.expect(&format!(
+        "Failed to read directory entry: {}",
+        target_dir.display()
+    )) {
         let path = entry.path();
         if let Some(fname) = path.file_name().and_then(|n| n.to_str()) {
             if fname.starts_with("callers-") && fname.ends_with(".json") {
-                let content = tokio_fs::read_to_string(&path).await?;
+                let content = tokio_fs::read_to_string(&path)
+                    .await
+                    .expect(&format!("Failed to read file: {}", path.display()));
                 let content_json: serde_json::Value =
                     serde_json::from_str(&content).unwrap_or(serde_json::Value::String(content));
                 let json_obj = serde_json::json!({
@@ -151,8 +172,16 @@ pub(crate) async fn check_src_contain_target_function(
         if path.is_empty() {
             continue;
         }
-        if check_src_contain_target_function_single(src, path).await? {
-            return Ok(true);
+        match check_src_contain_target_function_single(src, path).await {
+            Ok(true) => return Ok(true),
+            Ok(false) => continue,
+            Err(e) => {
+                warn!(
+                    "check_src_contain_target_function_single failed for {}: {}",
+                    path, e
+                );
+                return Err(e);
+            }
         }
     }
     Ok(false)
@@ -180,7 +209,8 @@ async fn check_src_contain_target_function_single(
             return Ok(false);
         } else {
             return Err(anyhow::anyhow!(
-                "search process error, exit code: {:?}",
+                "search process error in {}, exit code: {:?}",
+                src,
                 status.code()
             ));
         }

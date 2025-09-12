@@ -32,8 +32,8 @@ impl CrateWorkspace {
 pub(crate) struct CrateVersionDir {
     cve_id: String,
     path: PathBuf,
-    name: String,
-    version: String,
+    // name: String,
+    // version: String,
 }
 
 impl CrateVersionDir {
@@ -46,8 +46,6 @@ impl CrateVersionDir {
         Self {
             cve_id: cve_id.to_owned(),
             path,
-            name: "".to_owned(),
-            version: "".to_owned(),
         }
     }
 
@@ -57,13 +55,11 @@ impl CrateVersionDir {
         Self {
             cve_id: me.cve_id.clone(),
             path,
-            name,
-            version,
         }
     }
 
     pub async fn get_working_dir(&self) -> PathBuf {
-        self.path.join(format!("{}-{}", self.name, self.version))
+        self.path.clone()
     }
 }
 

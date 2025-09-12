@@ -15,7 +15,8 @@ pub struct Krate {
     /// the working directory of the crate. when analyzing a crate,
     /// a copy of the crate will be created in the working directory
     pub(crate) dir_idx: CrateVersionDirIndex,
-    pub(crate) working_dir: PathBuf,
+    pub(crate) working_dir: PathBuf, // XXX-workspace/XXX-0.1.1/
+    pub(crate) working_src_code_dir: PathBuf, // XXX-workspace/XXX-0.1.1/XXX-0.1.1
 }
 
 impl Krate {
@@ -34,17 +35,25 @@ impl Krate {
             .lock()
             .await
             .create_krate_working_dir(parent_version_dir_index, name, version)
-            .await?;
-
+            .await
+            .unwrap();
+        let working_dir = fs_manager.lock().await.get_krate_working_dir(dir_idx).await;
+        let working_src_code_dir = working_dir.join(format!("{}-{}", name, version));
         let krate = Self {
             name: name.to_owned(),
             version: version.to_owned(),
             dir_idx,
-            working_dir: fs_manager.lock().await.get_krate_working_dir(dir_idx).await,
+            working_dir,
+            working_src_code_dir,
         };
+        tracing::debug!("!working dir: {:?}", krate.working_dir);
+        tracing::debug!("!working src code dir: {:?}", krate.working_src_code_dir);
 
         // download into download directory and unzip into extract directory
-        krate.fetch_and_unzip_crate().await?;
+        krate
+            .fetch_and_unzip_crate()
+            .await
+            .expect("Failed to fetch and unzip crate");
         // copy the crate to the working directory
         // now, we have a copy of the crate in the
         // working directory, which can be modified anyway
@@ -76,20 +85,20 @@ impl Krate {
         self.get_download_crate_dir_path().await.join(extract_dir)
     }
 
-    pub(crate) async fn get_working_dir(&self) -> PathBuf {
-        self.working_dir.clone()
+    pub(crate) async fn get_working_src_code_dir(&self) -> PathBuf {
+        self.working_src_code_dir.clone()
     }
 
     pub(crate) async fn get_cargo_toml_path(&self) -> PathBuf {
-        self.working_dir.join("Cargo.toml")
+        self.working_src_code_dir.join("Cargo.toml")
     }
 
     pub(crate) async fn get_target_dir(&self) -> PathBuf {
-        self.working_dir.join("target")
+        self.working_src_code_dir.join("target")
     }
 
     pub(crate) async fn get_src_dir(&self) -> PathBuf {
-        self.working_dir.join("src")
+        self.working_src_code_dir.join("src")
     }
 
     pub async fn has_cargo_toml_in_extract_dir(&self) -> bool {
@@ -305,15 +314,20 @@ impl Krate {
 
     async fn cp_crate_to_working_dir(&self) -> Result<()> {
         let extract_dir = self.get_extract_crate_dir_path().await;
-        let working_dir = self.get_working_dir().await;
+        let working_src_code_dir = self.get_working_src_code_dir().await;
 
-        tracing::debug!(
+        tracing::info!(
             "Copy the crate to the working directory: {} -> {}",
             extract_dir.display(),
-            working_dir.display()
+            working_src_code_dir.display()
         );
-        utils::copy_dir(&extract_dir, &working_dir, false).await?;
-        Ok(())
+        match utils::copy_dir(&extract_dir, &working_src_code_dir, false).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(anyhow::anyhow!(
+                "Failed to copy the crate to the working directory: {}",
+                e
+            )),
+        }
     }
 
     /// execute cargo clean in the crate extract directory, release the target space
