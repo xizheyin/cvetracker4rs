@@ -1,0 +1,114 @@
+cve_id,crate_name,version_range,target_function_paths
+RUSTSEC-2018-0021,libpulse-binding,<1.2.1,"libpulse_binding::stream::Stream::get_context,libpulse_binding::stream::Stream::get_format_info"
+RUSTSEC-2019-0005,pancurses,>=0,"pancurses::mvprintw,pancurses::printw"
+RUSTSEC-2019-0006,ncurses,>=0,"ncurses::instr,ncurses::mvprintw,ncurses::mvwinstr,ncurses::mvwprintw,ncurses::printw"
+RUSTSEC-2019-0010,libflate,"<0.1.25, >=0.1.14",libflate::gzip::MultiDecoder::read
+RUSTSEC-2019-0013,spin,<0.5.2,spin::RwLock::new
+RUSTSEC-2019-0015,compact_arena,<0.4.0,compact_arena::SmallArena::new
+RUSTSEC-2019-0017,once_cell,"<1.0.1, >=0.2.5","once_cell::sync::Lazy::deref,once_cell::sync::Lazy::force,once_cell::unsync::Lazy::deref,once_cell::unsync::Lazy::force"
+RUSTSEC-2019-0018,renderdoc,<0.5.0,"renderdoc::api::RenderDocV110::trigger_multi_frame_capture,renderdoc::api::RenderDocV120::set_capture_file_comments"
+RUSTSEC-2019-0026,sodiumoxide,"<0.2.5, >=0.2.0","sodiumoxide::crypto::generichash::Digest::eq,sodiumoxide::crypto::generichash::Digest::ne"
+RUSTSEC-2019-0027,libsecp256k1,<0.3.1,libsecp256k1::Scalar::check_overflow
+RUSTSEC-2019-0036,failure,>=0.1.0,failure::Fail::__private_get_type_id__
+RUSTSEC-2019-0037,pnet,<0.27.2,pnet::transport::IcmpTransportChannelIterator
+RUSTSEC-2020-0007,bitvec,"<0.17.4, >=0.11.0",bitvec::vec::BitVec::into_boxed_bitslice
+RUSTSEC-2020-0017,internment,>=0.3.12,internment::ArcIntern::drop
+RUSTSEC-2020-0023,rulinalg,>=0.4.0,"rulinalg::matrix::RowMut::raw_slice,rulinalg::matrix::RowMut::raw_slice_mut"
+RUSTSEC-2020-0028,rocket,"<0.4.5, >=0.4.0",rocket::local::LocalRequest::clone
+RUSTSEC-2020-0068,multihash,<0.11.3,"multihash::digests::MultihashGeneric::from_bytes,multihash::digests::MultihashRefGeneric::from_slice"
+RUSTSEC-2020-0070,lock_api,>=0.1.0,"lock_api::MappedMutexGuard,lock_api::MappedRwLockReadGuard,lock_api::MappedRwLockWriteGuard,lock_api::RwLockReadGuard,lock_api::RwLockWriteGuard"
+RUSTSEC-2020-0075,branca,<0.10.0,"branca::Branca::decode,branca::decode"
+RUSTSEC-2020-0091,arc-swap,<1.1.0,arc_swap::access::MapGuard::deref
+RUSTSEC-2020-0093,async-h1,<2.3.0,"async_h1::server::accept,async_h1::server::decode"
+RUSTSEC-2020-0100,sys-info,<=0.1.1,sys_info::disk_info
+RUSTSEC-2020-0145,heapless,<=0.6,heapless::vec::IntoIter::clone
+RUSTSEC-2020-0164,cell-project,<0.1.4,"cell_project::cell_project,cell_project::nightly_cell_project"
+RUSTSEC-2020-0165,mozjpeg,<0.8.19,mozjpeg::DecompressScanlines::read_scanlines
+RUSTSEC-2021-0018,qwutils,<0.3.1,qwutils::imp::vec::VecExt::insert_slice_clone
+RUSTSEC-2021-0022,yottadb,<1.2.0,"yottadb::Key::sub_next_self_st,yottadb::Key::sub_prev_self_st,yottadb::KeyContext::sub_next_self_st,yottadb::KeyContext::sub_prev_self_st"
+RUSTSEC-2021-0027,bam,<0.1.3,bam::bgzip::Block::load
+RUSTSEC-2021-0028,toodee,<0.3.0,toodee::TooDee::insert_row
+RUSTSEC-2021-0031,nano_arena,<0.5.2,"nano_arena::Arena::split_at,nano_arena::ArenaSplit::split_at"
+RUSTSEC-2021-0033,stack_dst,<0.6.1,stack_dst::StackA::push_cloned
+RUSTSEC-2021-0037,diesel,<1.4.6,diesel::SqliteConnection::query_by_name
+RUSTSEC-2021-0041,parse_duration,*,parse_duration::parse
+RUSTSEC-2021-0054,rkyv,<0.6.0,rkyv::Archive::resolve
+RUSTSEC-2021-0068,iced-x86,<=1.10.3,iced_x86::Decoder::new
+RUSTSEC-2021-0071,grep-cli,<0.1.6,grep_cli::DecompressionReader::new
+RUSTSEC-2021-0073,prost-types,<=0.7.0,prost_types::Timestamp::Into<SystemTime>
+RUSTSEC-2021-0075,ark-r1cs-std,<0.3.0,ark_r1cs_std::FieldVar::mul_by_inverse
+RUSTSEC-2021-0077,better-macro,>1.0.0,better_macro::println
+RUSTSEC-2021-0080,tar,<0.4.36,tar::Archive::unpack
+RUSTSEC-2021-0083,derive-com-impl,<=0.1.1,derive_com_impl::derive_com_impl
+RUSTSEC-2021-0114,nanorand,"<=0.6.0,>=0.5.0",nanorand::tls::tls_rand
+RUSTSEC-2021-0119,nix,>=0.16.0,nix::unistd::getgrouplist
+RUSTSEC-2021-0121,crypto2,*,"crypto2::streamcipher::Chacha20::decrypt_slice,crypto2::streamcipher::Chacha20::encrypt_slice,crypto2::streamcipher::xor_si512_inplace"
+RUSTSEC-2021-0123,fruity,"<0.3.0, >=0.1.0","fruity::foundation::NSString::to_str,fruity::foundation::NSString::to_str_with_nul,fruity::foundation::NSString::to_string,fruity::foundation::NSString::to_string_with_nul"
+RUSTSEC-2021-0130,lru,<0.7.1,"lru::LruCache::iter,lru::LruCache::iter_mut"
+RUSTSEC-2021-0143,kamadak-exif,">=0.5.2, <0.5.3",kamadak_exif::Reader::read_from_container
+RUSTSEC-2021-0152,out-reference,">=0.1.0, <0.2.0",out_reference::Out::from_raw
+RUSTSEC-2022-0002,dashmap,>=5.0.0,"dashmap::mapref::multiple::RefMulti::key,dashmap::mapref::multiple::RefMulti::pair,dashmap::mapref::multiple::RefMulti::value,dashmap::mapref::multiple::RefMutMulti::key,dashmap::mapref::multiple::RefMutMulti::pair,dashmap::mapref::multiple::RefMutMulti::pair_mut,dashmap::mapref::one::Ref::key,dashmap::mapref::one::Ref::pair,dashmap::mapref::one::Ref::value,dashmap::mapref::one::RefMut::key,dashmap::mapref::one::RefMut::pair,dashmap::mapref::one::RefMut::pair_mut,dashmap::setref::multiple::RefMulti::key,dashmap::setref::one::Ref::key"
+RUSTSEC-2022-0004,rustc-serialize,*,rustc_serialize::json::Json::from_str
+RUSTSEC-2022-0009,libp2p-core,>=0.30.0-rc.1,libp2p_core::PeerRecord::from_signed_envelope
+RUSTSEC-2022-0018,totp-rs,<1.1.0,totp_rs::TOTP::check
+RUSTSEC-2022-0028,neon,"<0.10.1, >=0.8.0","neon::types::JsArrayBuffer::external,neon::types::JsBuffer::external"
+RUSTSEC-2022-0046,rocksdb,<0.19.0,rocksdb::DBWithThreadMode::open_cf_descriptors_with_ttl
+RUSTSEC-2022-0049,iana-time-zone,">0.1.42, <0.1.45",iana_time_zone::get_timezone
+RUSTSEC-2022-0067,lzf,<0.3.2,"lzf::compress,lzf::decompress"
+RUSTSEC-2022-0070,secp256k1,"<0.22.2,>=0.23.0, <0.23.5,>=0.24.0, <0.24.2",secp256k1::Secp256k1::preallocated_gen_new
+RUSTSEC-2022-0078,bumpalo,<3.11.1,bumpalo::collections::vec::Vec::into_iter
+RUSTSEC-2023-0017,maligned,*,"maligned::align_first,maligned::align_first_boxed,maligned::align_first_boxed_cloned,maligned::align_first_boxed_default"
+RUSTSEC-2023-0018,remove_dir_all,<0.8.0,"remove_dir_all::ensure_empty_dir,remove_dir_all::remove_dir_all,remove_dir_all::remove_dir_contents"
+RUSTSEC-2023-0032,ntru,>=0.4.3,"ntru::types::PrivateKey::export,ntru::types::PublicKey::export"
+RUSTSEC-2023-0045,memoffset,<0.6.2,memoffset::offset_of
+RUSTSEC-2023-0054,mail-internals,>=0.2.0,mail_internals::utils::vec_insert_bytes
+RUSTSEC-2023-0056,vm-memory,<0.12.2,"vm_memory::volatile_memory::VolatileMemory::aligned_as_mut,vm_memory::volatile_memory::VolatileMemory::aligned_as_ref,vm_memory::volatile_memory::VolatileMemory::get_array_ref,vm_memory::volatile_memory::VolatileMemory::get_atomic_ref,vm_memory::volatile_memory::VolatileMemory::get_ref"
+RUSTSEC-2023-0068,cocoon,<=0.3.3,"cocoon::Cocoon::dump,cocoon::Cocoon::encrypt,cocoon::Cocoon::wrap,cocoon::MiniCocoon::dump,cocoon::MiniCocoon::encrypt,cocoon::MiniCocoon::wrap"
+RUSTSEC-2023-0073,candid,">=0.9.0, <0.9.10",candid::Decode
+RUSTSEC-2023-0074,zerocopy,">=0.2.2, <0.2.9,>=0.3.0, <0.3.2,>=0.4.0, <0.4.1,>=0.5.0, <0.5.2,>=0.6.0, <0.6.6,>=0.7.0, <0.7.31","zerocopy::Ref::into_mut,zerocopy::Ref::into_mut_slice,zerocopy::Ref::into_ref,zerocopy::Ref::into_slice"
+RUSTSEC-2023-0078,tracing,"<0.1.40,>=0.1.38",tracing::instrument::Instrumented::into_inner
+RUSTSEC-2023-0080,transpose,>=0.1.0,transpose::transpose
+RUSTSEC-2023-0083,blurhash,< 0.2.0,blurhash::decode
+RUSTSEC-2024-0002,vmm-sys-util,"<0.12.0, >=0.5.0",vmm_sys_util::fam::FamStructWrapper::deserialize
+RUSTSEC-2024-0006,shlex,<1.2.1,"shlex::bytes::join,shlex::bytes::quote,shlex::join,shlex::quote"
+RUSTSEC-2024-0007,rust-i18n-support,"<3.0.1, >=3.0.0",rust_i18n_support::AtomicStr::as_str
+RUSTSEC-2024-0010,svix,<1.17.0,svix::webhooks::Webhook::verify
+RUSTSEC-2024-0018,crayon,>=0.6.0,"crayon::utils::object_pool::ObjectPool<H,T>::free"
+RUSTSEC-2024-0019,mio,">=0.7.2, <=0.8.10",mio::windows::NamedPipe::new
+RUSTSEC-2024-0020,whoami,<1.5.0,"whoami::realname,whoami::realname_os,whoami::username,whoami::username_os"
+RUSTSEC-2024-0021,eyre,">=0.6.9, <0.6.12",eyre::Report::downcast
+RUSTSEC-2024-0336,rustls,"<=0.21.10,<=0.22.3,<=0.23.4,^0.20",rustls::ConnectionCommon::complete_io
+RUSTSEC-2024-0341,tls-listener,<0.10.0,tls_listener::TlsListener::new
+RUSTSEC-2024-0343,nano-id,<0.4.0,"nano_id::base58,nano_id::base62,nano_id::gen"
+RUSTSEC-2024-0345,sequoia-openpgp,">=1.13.0, <1.21.0",sequoia_openpgp::cert::raw::RawCertParser
+RUSTSEC-2024-0356,matrix-sdk-crypto,<0.7.2,matrix_sdk_crypto::UserIdentity::is_verified
+RUSTSEC-2024-0360,xmp_toolkit,<1.9.0,xmp_toolkit::XmpFile::close
+RUSTSEC-2024-0374,ouch,<=0.3.1,ouch::archive::zip::convert_zip_date_time
+RUSTSEC-2024-0401,zlib-rs,<=0.3.1,zlib_rs::inflate::inflate
+RUSTSEC-2024-0402,hashbrown,=0.15.0,hashbrown::HashMap::borsh_serialize
+RUSTSEC-2024-0404,anstream,<0.6.8,anstream::adapter::strip_str
+RUSTSEC-2024-0408,pprof,<0.14.0,"pprof::report::ReportBuilder::build,pprof::validate"
+RUSTSEC-2024-0424,libafl,<0.11.2,libafl::observers::map::HitcountsMapObserver::post_exec
+RUSTSEC-2024-0426,spl-token-swap,<=3.0.0,spl_token_swap::instruction::unpack
+RUSTSEC-2024-0428,kvm-ioctls,<=0.19.0,kvm_ioctls::ioctls::vm::VmFd::create_device
+RUSTSEC-2024-0429,glib,">=0.15.0, <0.20.0","glib::VariantStrIter::last,glib::VariantStrIter::next,glib::VariantStrIter::next_back,glib::VariantStrIter::nth,glib::VariantStrIter::nth_back"
+RUSTSEC-2024-0431,xous,<0.9.51,"xous::definitions::MemoryRange::as_slice,xous::definitions::MemoryRange::as_slice_mut"
+RUSTSEC-2024-0435,fyrox-core,">=0.28.1, <=0.36",fyrox_core::transmute_vec_as_bytes
+RUSTSEC-2024-0442,wasmtime-jit-debug,<=24.0.0,wasmtime_jit_debug::perf_jitdump::JitDumpFile::dump_code_load_record
+RUSTSEC-2025-0001,gix-worktree-state,<0.17.0,gix_worktree_state::checkout
+RUSTSEC-2025-0002,fast-float2,<0.2.2,fast_float2::common::AsciiStr::first
+RUSTSEC-2025-0003,fast-float,*,fast_float::common::AsciiStr::first
+RUSTSEC-2025-0005,grcov,<=0.8.20,grcov::covdir::get_coverage
+RUSTSEC-2025-0016,pared,<0.4.0,"pared::prc::Prc::from_rc,pared::prc::Prc::project,pared::prc::Prc::try_from_rc,pared::sync::Parc::from_arc,pared::sync::Parc::project,pared::sync::Parc::try_from_arc"
+RUSTSEC-2025-0018,xmas-elf,<0.10,"xmas_elf::hash::HashTable::get_bucket,xmas_elf::hash::HashTable::get_chain"
+RUSTSEC-2025-0021,gix-features,<0.41.0,"gix_features::hash::Hasher::digest,gix_features::hash::Hasher::update,gix_features::hash::Write::flush,gix_features::hash::Write::new,gix_features::hash::Write::write,gix_features::hash::bytes,gix_features::hash::bytes_of_file,gix_features::hash::bytes_with_hasher,gix_features::hash::hasher"
+RUSTSEC-2025-0027,mp3-metadata,<0.4.0,mp3_metadata::read_from_slice
+RUSTSEC-2025-0032,redox_uefi_std,">=0.1.8, <0.1.14",redox_uefi_std::ffi::nstr
+RUSTSEC-2025-0033,scanner,<=0.1.0,"scanner::Match::get,scanner::Match::ptr"
+RUSTSEC-2025-0039,anon-vec,<=0.1.1,"anon_vec::AnonVec::get_mut,anon_vec::AnonVec::get_ref,anon_vec::AnonVec::remove_get"
+RUSTSEC-2025-0042,static-alloc,>=0.2.2,static_alloc::unsync::MemBump::new
+RUSTSEC-2025-0043,matrix-sdk-sqlite,>=0.11.0,matrix_sdk_sqlite::SqliteEventCacheStore::find_event_relations
+RUSTSEC-2025-0044,slice-ring-buffer,<=0.3.4,"slice_ring_buffer::IntoIter::clone,slice_ring_buffer::SliceRingBuffer::extend_from_slice,slice_ring_buffer::SliceRingBuffer::insert,slice_ring_buffer::SliceRingBuffer::shrink_to_fit"
+RUSTSEC-2025-0045,static_cell,=2.1.0,static_cell::ConstStaticCell::new
+RUSTSEC-2025-0047,slab,=0.4.10,slab::Slab::get_disjoint_mut
+RUSTSEC-2025-0050,id-map,">=0.1.6, <=0.2.1",id_map::IdMap::from_iter

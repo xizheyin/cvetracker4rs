@@ -1,0 +1,902 @@
+cve_id,crate_name,version_range,target_function_paths
+RUSTSEC-2024-0433,age,">=0.7.0, <0.7.2",age::plugin::Identity::default_for_plugin
+RUSTSEC-2024-0433,age,">=0.8.0, <0.8.2",age::plugin::Identity::default_for_plugin
+RUSTSEC-2024-0433,age,">=0.9.0, <0.9.3",age::plugin::Identity::default_for_plugin
+RUSTSEC-2024-0433,age,^0.10.0,age::plugin::Identity::default_for_plugin
+RUSTSEC-2024-0433,age,^0.11.0,age::plugin::Identity::default_for_plugin
+RUSTSEC-2024-0433,age,^0.6.0,age::plugin::Identity::from_str
+RUSTSEC-2024-0433,age,">=0.7.0, <0.7.2",age::plugin::Identity::from_str
+RUSTSEC-2024-0433,age,">=0.8.0, <0.8.2",age::plugin::Identity::from_str
+RUSTSEC-2024-0433,age,">=0.9.0, <0.9.3",age::plugin::Identity::from_str
+RUSTSEC-2024-0433,age,^0.10.0,age::plugin::Identity::from_str
+RUSTSEC-2024-0433,age,^0.11.0,age::plugin::Identity::from_str
+RUSTSEC-2024-0433,age,^0.6.0,age::plugin::IdentityPluginV1::new
+RUSTSEC-2024-0433,age,">=0.7.0, <0.7.2",age::plugin::IdentityPluginV1::new
+RUSTSEC-2024-0433,age,">=0.8.0, <0.8.2",age::plugin::IdentityPluginV1::new
+RUSTSEC-2024-0433,age,">=0.9.0, <0.9.3",age::plugin::IdentityPluginV1::new
+RUSTSEC-2024-0433,age,^0.10.0,age::plugin::IdentityPluginV1::new
+RUSTSEC-2024-0433,age,^0.11.0,age::plugin::IdentityPluginV1::new
+RUSTSEC-2024-0433,age,^0.6.0,age::plugin::Recipient::from_str
+RUSTSEC-2024-0433,age,">=0.7.0, <0.7.2",age::plugin::Recipient::from_str
+RUSTSEC-2024-0433,age,">=0.8.0, <0.8.2",age::plugin::Recipient::from_str
+RUSTSEC-2024-0433,age,">=0.9.0, <0.9.3",age::plugin::Recipient::from_str
+RUSTSEC-2024-0433,age,^0.10.0,age::plugin::Recipient::from_str
+RUSTSEC-2024-0433,age,^0.11.0,age::plugin::Recipient::from_str
+RUSTSEC-2024-0433,age,^0.6.0,age::plugin::RecipientPluginV1::new
+RUSTSEC-2024-0433,age,">=0.7.0, <0.7.2",age::plugin::RecipientPluginV1::new
+RUSTSEC-2024-0433,age,">=0.8.0, <0.8.2",age::plugin::RecipientPluginV1::new
+RUSTSEC-2024-0433,age,">=0.9.0, <0.9.3",age::plugin::RecipientPluginV1::new
+RUSTSEC-2024-0433,age,^0.10.0,age::plugin::RecipientPluginV1::new
+RUSTSEC-2024-0433,age,^0.11.0,age::plugin::RecipientPluginV1::new
+RUSTSEC-2019-0001,ammonia,<2.1.0,ammonia::clean
+RUSTSEC-2022-0003,ammonia,<=3.1.2,ammonia::clean_text
+RUSTSEC-2019-0001,ammonia,<2.1.0,ammonia::Document::to_string
+RUSTSEC-2019-0001,ammonia,<2.1.0,ammonia::Document::write_to
+RUSTSEC-2025-0039,anon-vec,<=0.1.1,anon_vec::AnonVec::get_mut
+RUSTSEC-2025-0039,anon-vec,<=0.1.1,anon_vec::AnonVec::get_ref
+RUSTSEC-2025-0039,anon-vec,<=0.1.1,anon_vec::AnonVec::remove_get
+RUSTSEC-2024-0404,anstream,<0.6.8,anstream::adapter::strip_str
+RUSTSEC-2020-0091,arc-swap,<1.1.0,arc_swap::access::MapGuard::deref
+RUSTSEC-2021-0075,ark-r1cs-std,<0.3.0,ark_r1cs_std::FieldVar::mul_by_inverse
+RUSTSEC-2020-0093,async-h1,<2.3.0,async_h1::server::accept
+RUSTSEC-2020-0093,async-h1,<2.3.0,async_h1::server::decode
+RUSTSEC-2021-0027,bam,<0.1.3,bam::bgzip::Block::load
+RUSTSEC-2021-0077,better-macro,>1.0.0,better_macro::println
+RUSTSEC-2020-0007,bitvec,"<0.17.4, >=0.11.0",bitvec::vec::BitVec::into_boxed_bitslice
+RUSTSEC-2023-0083,blurhash,< 0.2.0,blurhash::decode
+RUSTSEC-2020-0075,branca,<0.10.0,branca::Branca::decode
+RUSTSEC-2020-0075,branca,<0.10.0,branca::decode
+RUSTSEC-2022-0078,bumpalo,<3.11.1,bumpalo::collections::vec::Vec::into_iter
+RUSTSEC-2023-0073,candid,">=0.9.0, <0.9.10",candid::Decode
+RUSTSEC-2020-0164,cell-project,<0.1.4,cell_project::cell_project
+RUSTSEC-2020-0164,cell-project,<0.1.4,cell_project::nightly_cell_project
+RUSTSEC-2023-0068,cocoon,<=0.3.3,cocoon::Cocoon::dump
+RUSTSEC-2023-0068,cocoon,<=0.3.3,cocoon::Cocoon::encrypt
+RUSTSEC-2023-0068,cocoon,<=0.3.3,cocoon::Cocoon::wrap
+RUSTSEC-2023-0068,cocoon,<=0.3.3,cocoon::MiniCocoon::dump
+RUSTSEC-2023-0068,cocoon,<=0.3.3,cocoon::MiniCocoon::encrypt
+RUSTSEC-2023-0068,cocoon,<=0.3.3,cocoon::MiniCocoon::wrap
+RUSTSEC-2019-0015,compact_arena,<0.4.0,compact_arena::SmallArena::new
+RUSTSEC-2024-0018,crayon,>=0.6.0,"crayon::utils::object_pool::ObjectPool<H,T>::free"
+RUSTSEC-2021-0121,crypto2,* ,crypto2::streamcipher::Chacha20::decrypt_slice
+RUSTSEC-2021-0121,crypto2,* ,crypto2::streamcipher::Chacha20::encrypt_slice
+RUSTSEC-2021-0121,crypto2,* ,crypto2::streamcipher::xor_si512_inplace
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::multiple::RefMulti::key
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::multiple::RefMulti::pair
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::multiple::RefMulti::value
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::multiple::RefMutMulti::key
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::multiple::RefMutMulti::pair
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::multiple::RefMutMulti::pair_mut
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::one::Ref::key
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::one::Ref::pair
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::one::Ref::value
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::one::RefMut::key
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::one::RefMut::pair
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::mapref::one::RefMut::pair_mut
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::setref::multiple::RefMulti::key
+RUSTSEC-2022-0002,dashmap,>=5.0.0,dashmap::setref::one::Ref::key
+RUSTSEC-2021-0083,derive-com-impl,<=0.1.1,derive_com_impl::derive_com_impl
+RUSTSEC-2021-0037,diesel,<1.4.6,diesel::SqliteConnection::query_by_name
+RUSTSEC-2024-0021,eyre,">=0.6.9, <0.6.12",eyre::Report::downcast
+RUSTSEC-2019-0036,failure,>=0.1.0,failure::Fail::__private_get_type_id__
+RUSTSEC-2025-0003,fast-float,* ,fast_float::common::AsciiStr::first
+RUSTSEC-2025-0002,fast-float2,<0.2.2,fast_float2::common::AsciiStr::first
+RUSTSEC-2019-0028,flatbuffers,>=0.4.0,flatbuffers::Follow::follow
+RUSTSEC-2019-0028,flatbuffers,<=0.6.0,flatbuffers::Follow::follow
+RUSTSEC-2020-0009,flatbuffers,>=0.4.0,flatbuffers::read_scalar
+RUSTSEC-2020-0009,flatbuffers,>=0.4.0,flatbuffers::read_scalar_at
+RUSTSEC-2021-0038,fltk,"<0.15.2, >=0.14.12",fltk::image::Pixmap::new
+RUSTSEC-2021-0038,fltk,<0.15.2,fltk::prelude::WidgetExt::set_label_type
+RUSTSEC-2021-0038,fltk,<0.14.12,fltk::prelude::WindowExt::set_icon
+RUSTSEC-2021-0123,fruity,"<0.3.0, >=0.1.0",fruity::foundation::NSString::to_str
+RUSTSEC-2021-0123,fruity,"<0.3.0, >=0.1.0",fruity::foundation::NSString::to_str_with_nul
+RUSTSEC-2021-0123,fruity,"<0.3.0, >=0.1.0",fruity::foundation::NSString::to_string
+RUSTSEC-2021-0123,fruity,"<0.3.0, >=0.1.0",fruity::foundation::NSString::to_string_with_nul
+RUSTSEC-2020-0061,futures-task,>=0.3.0,futures_task::noop_waker_ref
+RUSTSEC-2020-0060,futures-task,>=0.3.0,futures_task::waker
+RUSTSEC-2020-0059,futures-util,>=0.3.2,futures_util::lock::MutexGuard::map
+RUSTSEC-2020-0062,futures-util,>=0.3.0,futures_util::stream::FuturesUnordered
+RUSTSEC-2024-0435,fyrox-core,">=0.28.1, <=0.36",fyrox_core::transmute_vec_as_bytes
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::bytes
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::bytes_of_file
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::bytes_with_hasher
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::hasher
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::Hasher::digest
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::Hasher::update
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::Write::flush
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::Write::new
+RUSTSEC-2025-0021,gix-features,<0.41.0,gix_features::hash::Write::write
+RUSTSEC-2024-0355,gix-path,< 0.10.9,gix_path::env::exe_invocation
+RUSTSEC-2024-0355,gix-path,< 0.10.9,gix_path::env::installation_config
+RUSTSEC-2024-0367,gix-path,< 0.10.10,gix_path::env::installation_config
+RUSTSEC-2024-0371,gix-path,< 0.10.11,gix_path::env::installation_config
+RUSTSEC-2024-0355,gix-path,< 0.10.9,gix_path::env::installation_config_prefix
+RUSTSEC-2024-0367,gix-path,< 0.10.10,gix_path::env::installation_config_prefix
+RUSTSEC-2024-0371,gix-path,< 0.10.11,gix_path::env::installation_config_prefix
+RUSTSEC-2024-0355,gix-path,< 0.10.9,gix_path::env::system_prefix
+RUSTSEC-2025-0001,gix-worktree-state,<0.17.0,gix_worktree_state::checkout
+RUSTSEC-2024-0429,glib,">=0.15.0, <0.20.0",glib::VariantStrIter::last
+RUSTSEC-2024-0429,glib,">=0.15.0, <0.20.0",glib::VariantStrIter::next
+RUSTSEC-2024-0429,glib,">=0.15.0, <0.20.0",glib::VariantStrIter::next_back
+RUSTSEC-2024-0429,glib,">=0.15.0, <0.20.0",glib::VariantStrIter::nth
+RUSTSEC-2024-0429,glib,">=0.15.0, <0.20.0",glib::VariantStrIter::nth_back
+RUSTSEC-2025-0005,grcov,<=0.8.20,grcov::covdir::get_coverage
+RUSTSEC-2021-0071,grep-cli,<0.1.6,grep_cli::DecompressionReader::new
+RUSTSEC-2024-0402,hashbrown,,hashbrown::HashMap::borsh_serialize
+RUSTSEC-2020-0145,heapless,<=0.6,heapless::vec::IntoIter::clone
+RUSTSEC-2025-0006,hickory-proto,>=0.25.0-alpha.5,hickory_proto::dnssec::DnssecDnsHandle::send
+RUSTSEC-2025-0006,hickory-proto,>=0.24.3,hickory_proto::xfer::DnssecDnsHandle::send
+RUSTSEC-2025-0006,hickory-proto,<0.25.0,hickory_proto::xfer::DnssecDnsHandle::send
+RUSTSEC-2019-0034,http,<0.1.20,http::header::HeaderMap::drain
+RUSTSEC-2019-0033,http,<0.1.20,http::header::HeaderMap::reserve
+RUSTSEC-2022-0049,iana-time-zone,">0.1.42, <0.1.45",iana_time_zone::get_timezone
+RUSTSEC-2021-0068,iced-x86,<=1.10.3,iced_x86::Decoder::new
+RUSTSEC-2025-0050,id-map,">=0.1.6, <=0.2.1",id_map::IdMap::from_iter
+RUSTSEC-2020-0073,image,<0.23.12,image::Bgr::from_slice_mut
+RUSTSEC-2020-0073,image,<0.23.12,image::Bgra::from_slice_mut
+RUSTSEC-2019-0014,image,"<0.21.3, >=0.10.2",image::hdr::HDRDecoder::read_image_transform
+RUSTSEC-2020-0073,image,<0.23.12,image::Luma::from_slice_mut
+RUSTSEC-2020-0073,image,<0.23.12,image::LumaA::from_slice_mut
+RUSTSEC-2020-0073,image,<0.23.12,image::Rgb::from_slice_mut
+RUSTSEC-2020-0073,image,<0.23.12,image::Rgba::from_slice_mut
+RUSTSEC-2023-0048,intaglio,<1.9.0,intaglio::bytes::SymbolTable::intern
+RUSTSEC-2023-0048,intaglio,"<1.9.0, >=1.5.0",intaglio::cstr::SymbolTable::intern
+RUSTSEC-2023-0048,intaglio,"<1.9.0, >=1.5.0",intaglio::osstr::SymbolTable::intern
+RUSTSEC-2023-0048,intaglio,"<1.9.0, >=1.5.0",intaglio::path::SymbolTable::intern
+RUSTSEC-2023-0048,intaglio,<1.9.0,intaglio::SymbolTable::intern
+RUSTSEC-2020-0017,internment,>=0.3.12,internment::ArcIntern::drop
+RUSTSEC-2021-0143,kamadak-exif,">=0.5.2, <0.5.3",kamadak_exif::Reader::read_from_container
+RUSTSEC-2024-0428,kvm-ioctls,<=0.19.0,kvm_ioctls::ioctls::vm::VmFd::create_device
+RUSTSEC-2020-0069,lettre,<0.10.0-alpha.1,lettre::sendmail::SendmailTransport::send
+RUSTSEC-2021-0069,lettre,<0.10.0-alpha.1,lettre::smtp::SmtpTransport::send
+RUSTSEC-2020-0069,lettre,">=0.10.0-alpha.1, <=0.10.0-alpha.3",lettre::transport::sendmail::SendmailTransport::send
+RUSTSEC-2020-0069,lettre,">=0.10.0-alpha.1, <=0.10.0-alpha.3",lettre::transport::sendmail::SendmailTransport::send_raw
+RUSTSEC-2021-0069,lettre,">=0.10.0-alpha.1, <0.10.0-rc.3",lettre::transport::smtp::SmtpTransport::send
+RUSTSEC-2021-0069,lettre,">=0.10.0-alpha.1, <0.10.0-rc.3",lettre::transport::smtp::SmtpTransport::send_raw
+RUSTSEC-2024-0424,libafl,<0.11.2,libafl::observers::map::HitcountsMapObserver::post_exec
+RUSTSEC-2019-0010,libflate,"<0.1.25, >=0.1.14",libflate::gzip::MultiDecoder::read
+RUSTSEC-2024-0013,libgit2-sys,<0.16.2,libgit2_sys::git_index_add
+RUSTSEC-2024-0013,libgit2-sys,"<0.16.2, >=0.13.0",libgit2_sys::git_revparse_single
+RUSTSEC-2022-0009,libp2p-core,>=0.30.0-rc.1,libp2p_core::PeerRecord::from_signed_envelope
+RUSTSEC-2018-0021,libpulse-binding,<1.2.1,libpulse_binding::stream::Stream::get_context
+RUSTSEC-2018-0021,libpulse-binding,<1.2.1,libpulse_binding::stream::Stream::get_format_info
+RUSTSEC-2019-0027,libsecp256k1,<0.3.1,libsecp256k1::Scalar::check_overflow
+RUSTSEC-2020-0070,lock_api,>=0.1.0,lock_api::MappedMutexGuard
+RUSTSEC-2020-0070,lock_api,>=0.1.0,lock_api::MappedRwLockReadGuard
+RUSTSEC-2020-0070,lock_api,>=0.1.0,lock_api::MappedRwLockWriteGuard
+RUSTSEC-2020-0070,lock_api,>=0.1.0,lock_api::RwLockReadGuard
+RUSTSEC-2020-0070,lock_api,>=0.1.0,lock_api::RwLockWriteGuard
+RUSTSEC-2021-0130,lru,<0.7.1,lru::LruCache::iter
+RUSTSEC-2021-0130,lru,<0.7.1,lru::LruCache::iter_mut
+RUSTSEC-2022-0067,lzf,<0.3.2,lzf::compress
+RUSTSEC-2022-0067,lzf,<0.3.2,lzf::decompress
+RUSTSEC-2023-0054,mail-internals,>=0.2.0,mail_internals::utils::vec_insert_bytes
+RUSTSEC-2023-0017,maligned,* ,maligned::align_first
+RUSTSEC-2023-0017,maligned,* ,maligned::align_first_boxed
+RUSTSEC-2023-0017,maligned,* ,maligned::align_first_boxed_cloned
+RUSTSEC-2023-0017,maligned,* ,maligned::align_first_boxed_default
+RUSTSEC-2024-0356,matrix-sdk-crypto,<0.7.2,matrix_sdk_crypto::UserIdentity::is_verified
+RUSTSEC-2025-0043,matrix-sdk-sqlite,>=0.11.0,matrix_sdk_sqlite::SqliteEventCacheStore::find_event_relations
+RUSTSEC-2023-0045,memoffset,<0.6.2,memoffset::offset_of
+RUSTSEC-2024-0019,mio,">=0.7.2, <=0.8.10",mio::windows::NamedPipe::new
+RUSTSEC-2020-0165,mozjpeg,<0.8.19,mozjpeg::DecompressScanlines::read_scanlines
+RUSTSEC-2025-0027,mp3-metadata,<0.4.0,mp3_metadata::read_from_slice
+RUSTSEC-2020-0068,multihash,<0.11.3,multihash::digests::MultihashGeneric::from_bytes
+RUSTSEC-2020-0068,multihash,<0.11.3,multihash::digests::MultihashRefGeneric::from_slice
+RUSTSEC-2021-0031,nano_arena,<0.5.2,nano_arena::Arena::split_at
+RUSTSEC-2021-0031,nano_arena,<0.5.2,nano_arena::ArenaSplit::split_at
+RUSTSEC-2024-0343,nano-id,<0.4.0,nano_id::base58
+RUSTSEC-2024-0343,nano-id,<0.4.0,nano_id::base62
+RUSTSEC-2024-0343,nano-id,<0.4.0,nano_id::gen
+RUSTSEC-2021-0114,nanorand,>=0.5.0,nanorand::tls::tls_rand
+RUSTSEC-2021-0114,nanorand,<=0.6.0,nanorand::tls::tls_rand
+RUSTSEC-2019-0006,ncurses,>=0,ncurses::instr
+RUSTSEC-2019-0006,ncurses,>=0,ncurses::mvprintw
+RUSTSEC-2019-0006,ncurses,>=0,ncurses::mvwinstr
+RUSTSEC-2019-0006,ncurses,>=0,ncurses::mvwprintw
+RUSTSEC-2019-0006,ncurses,>=0,ncurses::printw
+RUSTSEC-2022-0028,neon,"<0.10.1, >=0.8.0",neon::types::JsArrayBuffer::external
+RUSTSEC-2022-0028,neon,"<0.10.1, >=0.8.0",neon::types::JsBuffer::external
+RUSTSEC-2021-0119,nix,>=0.16.0,nix::unistd::getgrouplist
+RUSTSEC-2023-0032,ntru,>=0.4.3,ntru::types::PrivateKey::export
+RUSTSEC-2023-0032,ntru,>=0.4.3,ntru::types::PublicKey::export
+RUSTSEC-2019-0017,once_cell,"<1.0.1, >=0.2.5",once_cell::sync::Lazy::deref
+RUSTSEC-2019-0017,once_cell,"<1.0.1, >=0.2.5",once_cell::sync::Lazy::force
+RUSTSEC-2019-0017,once_cell,"<1.0.1, >=0.2.5",once_cell::unsync::Lazy::deref
+RUSTSEC-2019-0017,once_cell,"<1.0.1, >=0.2.5",once_cell::unsync::Lazy::force
+RUSTSEC-2024-0357,openssl,"<0.10.66, >=0.8.0",openssl::bio::MemBio::get_buf
+RUSTSEC-2025-0022,openssl,">=0.10.39, <0.10.72",openssl::cipher::Cipher::fetch
+RUSTSEC-2025-0022,openssl,">=0.10.39, <0.10.72",openssl::md::Md::fetch
+RUSTSEC-2025-0004,openssl,">=0.10.0, <0.10.70",openssl::ssl::select_next_proto
+RUSTSEC-2023-0023,openssl,"<0.10.48, >=0.9.7",openssl::x509::extension::ExtendedKeyUsage::other
+RUSTSEC-2023-0023,openssl,"<0.10.48, >=0.9.7",openssl::x509::extension::SubjectAlternativeName::new
+RUSTSEC-2023-0072,openssl,"<0.10.60, >=0.10.29",openssl::x509::store::X509StoreRef::objects
+RUSTSEC-2023-0044,openssl,"<0.10.55, >=0.10.0",openssl::x509::verify::X509VerifyParamRef::set_host
+RUSTSEC-2023-0024,openssl,"<0.10.48, >=0.9.7",openssl::x509::X509Extension::new
+RUSTSEC-2023-0024,openssl,"<0.10.48, >=0.9.7",openssl::x509::X509Extension::new_nid
+RUSTSEC-2023-0022,openssl,"<0.10.48, >=0.9.7",openssl::x509::X509NameBuilder::build
+RUSTSEC-2024-0374,ouch,<=0.3.1,ouch::archive::zip::convert_zip_date_time
+RUSTSEC-2021-0152,out-reference,">=0.1.0, <0.2.0",out_reference::Out::from_raw
+RUSTSEC-2019-0005,pancurses,>=0,pancurses::mvprintw
+RUSTSEC-2019-0005,pancurses,>=0,pancurses::printw
+RUSTSEC-2025-0016,pared,<0.4.0,pared::prc::Prc::from_rc
+RUSTSEC-2025-0016,pared,<0.4.0,pared::prc::Prc::project
+RUSTSEC-2025-0016,pared,<0.4.0,pared::prc::Prc::try_from_rc
+RUSTSEC-2025-0016,pared,<0.4.0,pared::sync::Parc::from_arc
+RUSTSEC-2025-0016,pared,<0.4.0,pared::sync::Parc::project
+RUSTSEC-2025-0016,pared,<0.4.0,pared::sync::Parc::try_from_arc
+RUSTSEC-2021-0041,parse_duration,* ,parse_duration::parse
+RUSTSEC-2023-0082,phonenumber,"< 0.2.5, <0.3.0",phonenumber::parse
+RUSTSEC-2024-0369,phonenumber,< 0.3.6,phonenumber::parse
+RUSTSEC-2019-0037,pnet,<0.27.2,pnet::transport::IcmpTransportChannelIterator
+RUSTSEC-2024-0408,pprof,<0.14.0,pprof::report::ReportBuilder::build
+RUSTSEC-2024-0408,pprof,<0.14.0,pprof::validate
+RUSTSEC-2021-0073,prost-types,<=0.7.0,prost_types::Timestamp::Into<SystemTime>
+RUSTSEC-2024-0437,protobuf,<=3.4.0,protobuf::coded_input_stream::CodedInputStream::skip_group
+RUSTSEC-2019-0003,protobuf,<2.6.0,protobuf::stream::read_raw_bytes_into
+RUSTSEC-2025-0020,pyo3,<0.24.1,pyo3::types::PyString::from_object
+RUSTSEC-2025-0020,pyo3,<0.24.1,pyo3::types::PyString::from_object_bound
+RUSTSEC-2025-0020,pyo3,>=0.21.0,pyo3::types::PyString::from_object_bound
+RUSTSEC-2024-0378,pyo3,"<0.22.4, >=0.22.0",pyo3::types::PyWeakrefMethods::get_object_borrowed
+RUSTSEC-2024-0378,pyo3,"<0.22.4, >=0.22.0",pyo3::types::PyWeakrefMethods::upgrade_borrowed
+RUSTSEC-2024-0378,pyo3,"<0.22.4, >=0.22.0",pyo3::types::PyWeakrefMethods::upgrade_borrowed_as
+RUSTSEC-2024-0378,pyo3,"<0.22.4, >=0.22.0",pyo3::types::PyWeakrefMethods::upgrade_borrowed_as_exact
+RUSTSEC-2024-0378,pyo3,"<0.22.4, >=0.22.0",pyo3::types::PyWeakrefMethods::upgrade_borrowed_as_unchecked
+RUSTSEC-2021-0018,qwutils,<0.3.1,qwutils::imp::vec::VecExt::insert_slice_clone
+RUSTSEC-2019-0035,rand_core,<0.4.2,rand_core::BlockRng::fill_bytes
+RUSTSEC-2019-0035,rand_core,<0.4.2,rand_core::BlockRng::next_u64
+RUSTSEC-2021-0023,rand_core,"<0.6.2, >=0.6.0",rand_core::le::read_u32_into
+RUSTSEC-2021-0023,rand_core,"<0.6.2, >=0.6.0",rand_core::le::read_u64_into
+RUSTSEC-2025-0032,redox_uefi_std,">=0.1.8, <0.1.14",redox_uefi_std::ffi::nstr
+RUSTSEC-2023-0018,remove_dir_all,<0.8.0,remove_dir_all::ensure_empty_dir
+RUSTSEC-2023-0018,remove_dir_all,<0.8.0,remove_dir_all::remove_dir_all
+RUSTSEC-2023-0018,remove_dir_all,<0.8.0,remove_dir_all::remove_dir_contents
+RUSTSEC-2019-0018,renderdoc,<0.5.0,renderdoc::api::RenderDocV110::trigger_multi_frame_capture
+RUSTSEC-2019-0018,renderdoc,<0.5.0,renderdoc::api::RenderDocV120::set_capture_file_comments
+RUSTSEC-2021-0054,rkyv,<0.6.0,rkyv::Archive::resolve
+RUSTSEC-2020-0028,rocket,"<0.4.5, >=0.4.0",rocket::local::LocalRequest::clone
+RUSTSEC-2022-0046,rocksdb,<0.19.0,rocksdb::DBWithThreadMode::open_cf_descriptors_with_ttl
+RUSTSEC-2020-0023,rulinalg,>=0.4.0,rulinalg::matrix::RowMut::raw_slice
+RUSTSEC-2020-0023,rulinalg,>=0.4.0,rulinalg::matrix::RowMut::raw_slice_mut
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::commit_hook
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::commit_hook
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::create_aggregate_function
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::create_aggregate_function
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::create_collation
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::create_collation
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::create_scalar_function
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::create_scalar_function
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::create_window_function
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::create_window_function
+RUSTSEC-2020-0014,rusqlite,<0.23.0,rusqlite::Connection::get_aux
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::rollback_hook
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::rollback_hook
+RUSTSEC-2020-0014,rusqlite,<0.23.0,rusqlite::Connection::set_aux
+RUSTSEC-2021-0128,rusqlite,">=0.25.0, <0.25.4",rusqlite::Connection::update_hook
+RUSTSEC-2021-0128,rusqlite,">=0.26.0, <0.26.2",rusqlite::Connection::update_hook
+RUSTSEC-2020-0014,rusqlite,<0.23.0,rusqlite::session::Session::attach
+RUSTSEC-2020-0014,rusqlite,<0.23.0,rusqlite::session::Session::diff
+RUSTSEC-2020-0014,rusqlite,<0.23.0,rusqlite::trace::log
+RUSTSEC-2020-0014,rusqlite,<0.23.0,rusqlite::vtab::create_module
+RUSTSEC-2024-0007,rust-i18n-support,"<3.0.1, >=3.0.0",rust_i18n_support::AtomicStr::as_str
+RUSTSEC-2022-0004,rustc-serialize,* ,rustc_serialize::json::Json::from_str
+RUSTSEC-2024-0336,rustls,<=0.23.4,rustls::ConnectionCommon::complete_io
+RUSTSEC-2024-0336,rustls,<=0.22.3,rustls::ConnectionCommon::complete_io
+RUSTSEC-2024-0336,rustls,<=0.21.10,rustls::ConnectionCommon::complete_io
+RUSTSEC-2024-0336,rustls,^0.20,rustls::ConnectionCommon::complete_io
+RUSTSEC-2025-0033,scanner,<=0.1.0,scanner::Match::get
+RUSTSEC-2025-0033,scanner,<=0.1.0,scanner::Match::ptr
+RUSTSEC-2021-0030,scratchpad,<1.3.1,scratchpad::SliceMoveSource::move_elements
+RUSTSEC-2025-0049,scratchpad,<=1.3.1,scratchpad::Tracking::get
+RUSTSEC-2025-0049,scratchpad,<=1.3.1,scratchpad::Tracking::set
+RUSTSEC-2022-0070,secp256k1,<0.22.2,secp256k1::Secp256k1::preallocated_gen_new
+RUSTSEC-2022-0070,secp256k1,">=0.23.0, <0.23.5",secp256k1::Secp256k1::preallocated_gen_new
+RUSTSEC-2022-0070,secp256k1,">=0.24.0, <0.24.2",secp256k1::Secp256k1::preallocated_gen_new
+RUSTSEC-2024-0345,sequoia-openpgp,">=1.13.0, <1.21.0",sequoia_openpgp::cert::raw::RawCertParser
+RUSTSEC-2024-0006,shlex,<1.2.1,shlex::bytes::join
+RUSTSEC-2024-0006,shlex,<1.2.1,shlex::bytes::quote
+RUSTSEC-2024-0006,shlex,<1.2.1,shlex::join
+RUSTSEC-2024-0006,shlex,<1.2.1,shlex::quote
+RUSTSEC-2025-0047,slab,,slab::Slab::get_disjoint_mut
+RUSTSEC-2025-0044,slice-ring-buffer,<=0.3.4,slice_ring_buffer::IntoIter::clone
+RUSTSEC-2025-0044,slice-ring-buffer,<=0.3.4,slice_ring_buffer::SliceRingBuffer::extend_from_slice
+RUSTSEC-2025-0044,slice-ring-buffer,<=0.3.4,slice_ring_buffer::SliceRingBuffer::insert
+RUSTSEC-2025-0044,slice-ring-buffer,<=0.3.4,slice_ring_buffer::SliceRingBuffer::shrink_to_fit
+RUSTSEC-2019-0009,smallvec,"<0.6.10, >=0.6.5",smallvec::SmallVec::grow
+RUSTSEC-2019-0012,smallvec,"<0.6.10, >=0.6.3",smallvec::SmallVec::grow
+RUSTSEC-2021-0003,smallvec,">=0.6.3, <0.6.14",smallvec::SmallVec::insert_many
+RUSTSEC-2021-0003,smallvec,">=1.0.0, <1.6.1",smallvec::SmallVec::insert_many
+RUSTSEC-2019-0026,sodiumoxide,"<0.2.5, >=0.2.0",sodiumoxide::crypto::generichash::Digest::eq
+RUSTSEC-2019-0026,sodiumoxide,"<0.2.5, >=0.2.0",sodiumoxide::crypto::generichash::Digest::ne
+RUSTSEC-2019-0013,spin,<0.5.2,spin::RwLock::new
+RUSTSEC-2024-0426,spl-token-swap,<=3.0.0,spl_token_swap::instruction::unpack
+RUSTSEC-2021-0033,stack_dst,<0.6.1,stack_dst::StackA::push_cloned
+RUSTSEC-2025-0042,static-alloc,>=0.2.2,static_alloc::unsync::MemBump::new
+RUSTSEC-2025-0045,static_cell,,static_cell::ConstStaticCell::new
+RUSTSEC-2024-0010,svix,<1.17.0,svix::webhooks::Webhook::verify
+RUSTSEC-2020-0100,sys-info,<=0.1.1,sys_info::disk_info
+RUSTSEC-2021-0080,tar,<0.4.36,tar::Archive::unpack
+RUSTSEC-2020-0071,time,^0.1,time::at
+RUSTSEC-2020-0071,time,^0.1,time::at_utc
+RUSTSEC-2020-0071,time,^0.1,time::now
+RUSTSEC-2020-0071,time,<0.2.23,time::OffsetDateTime::now_local
+RUSTSEC-2020-0071,time,<0.2.23,time::OffsetDateTime::try_now_local
+RUSTSEC-2020-0071,time,<0.2.23,time::UtcOffset::current_local_offset
+RUSTSEC-2020-0071,time,<0.2.23,time::UtcOffset::local_offset_at
+RUSTSEC-2020-0071,time,<0.2.23,time::UtcOffset::try_current_local_offset
+RUSTSEC-2020-0071,time,<0.2.23,time::UtcOffset::try_local_offset_at
+RUSTSEC-2024-0341,tls-listener,<0.10.0,tls_listener::TlsListener::new
+RUSTSEC-2021-0124,tokio,"<=1.13.0, >=0.1.14",tokio::sync::oneshot::Receiver::close
+RUSTSEC-2021-0072,tokio,"<=1.8.0, >=0.3.0",tokio::task::JoinHandle::abort
+RUSTSEC-2021-0028,toodee,<0.3.0,toodee::TooDee::insert_row
+RUSTSEC-2022-0018,totp-rs,<1.1.0,totp_rs::TOTP::check
+RUSTSEC-2023-0078,tracing,>=0.1.38,tracing::instrument::Instrumented::into_inner
+RUSTSEC-2023-0078,tracing,<0.1.40,tracing::instrument::Instrumented::into_inner
+RUSTSEC-2023-0080,transpose,>=0.1.0,transpose::transpose
+RUSTSEC-2023-0056,vm-memory,<0.12.2,vm_memory::volatile_memory::VolatileMemory::aligned_as_mut
+RUSTSEC-2023-0056,vm-memory,<0.12.2,vm_memory::volatile_memory::VolatileMemory::aligned_as_ref
+RUSTSEC-2023-0056,vm-memory,<0.12.2,vm_memory::volatile_memory::VolatileMemory::get_array_ref
+RUSTSEC-2023-0056,vm-memory,<0.12.2,vm_memory::volatile_memory::VolatileMemory::get_atomic_ref
+RUSTSEC-2023-0056,vm-memory,<0.12.2,vm_memory::volatile_memory::VolatileMemory::get_ref
+RUSTSEC-2024-0002,vmm-sys-util,"<0.12.0, >=0.5.0",vmm_sys_util::fam::FamStructWrapper::deserialize
+RUSTSEC-2022-0076,wasmtime,<1.0.2,wasmtime::Config::allocation_strategy
+RUSTSEC-2022-0016,wasmtime,^0.34.0,wasmtime::Config::epoch_interruption
+RUSTSEC-2022-0016,wasmtime,^0.34.1,wasmtime::Config::epoch_interruption
+RUSTSEC-2022-0016,wasmtime,^0.35.0,wasmtime::Config::epoch_interruption
+RUSTSEC-2022-0016,wasmtime,^0.35.1,wasmtime::Config::epoch_interruption
+RUSTSEC-2021-0110,wasmtime,<0.30.0,wasmtime::Linker::func_new
+RUSTSEC-2021-0110,wasmtime,<0.30.0,wasmtime::Linker::func_wrap
+RUSTSEC-2022-0076,wasmtime,">=2.0.0, <2.0.2",wasmtime::PoolingAllocationConfig::instance_memory_pages
+RUSTSEC-2021-0110,wasmtime,<0.30.0,wasmtime::Store::gc
+RUSTSEC-2024-0442,wasmtime-jit-debug,<=24.0.0,wasmtime_jit_debug::perf_jitdump::JitDumpFile::dump_code_load_record
+RUSTSEC-2024-0020,whoami,<1.5.0,whoami::realname
+RUSTSEC-2024-0020,whoami,<1.5.0,whoami::realname_os
+RUSTSEC-2024-0020,whoami,<1.5.0,whoami::username
+RUSTSEC-2024-0020,whoami,<1.5.0,whoami::username_os
+RUSTSEC-2025-0018,xmas-elf,<0.10,xmas_elf::hash::HashTable::get_bucket
+RUSTSEC-2025-0018,xmas-elf,<0.10,xmas_elf::hash::HashTable::get_chain
+RUSTSEC-2024-0360,xmp_toolkit,<1.9.0,xmp_toolkit::XmpFile::close
+RUSTSEC-2024-0431,xous,<0.9.51,xous::definitions::MemoryRange::as_slice
+RUSTSEC-2024-0431,xous,<0.9.51,xous::definitions::MemoryRange::as_slice_mut
+RUSTSEC-2021-0022,yottadb,<1.2.0,yottadb::Key::sub_next_self_st
+RUSTSEC-2021-0022,yottadb,<1.2.0,yottadb::Key::sub_prev_self_st
+RUSTSEC-2021-0022,yottadb,<1.2.0,yottadb::KeyContext::sub_next_self_st
+RUSTSEC-2021-0022,yottadb,<1.2.0,yottadb::KeyContext::sub_prev_self_st
+RUSTSEC-2023-0074,zerocopy,">=0.2.2, <0.2.9",zerocopy::Ref::into_mut
+RUSTSEC-2023-0074,zerocopy,">=0.3.0, <0.3.2",zerocopy::Ref::into_mut
+RUSTSEC-2023-0074,zerocopy,">=0.4.0, <0.4.1",zerocopy::Ref::into_mut
+RUSTSEC-2023-0074,zerocopy,">=0.5.0, <0.5.2",zerocopy::Ref::into_mut
+RUSTSEC-2023-0074,zerocopy,">=0.6.0, <0.6.6",zerocopy::Ref::into_mut
+RUSTSEC-2023-0074,zerocopy,">=0.7.0, <0.7.31",zerocopy::Ref::into_mut
+RUSTSEC-2023-0074,zerocopy,">=0.2.2, <0.2.9",zerocopy::Ref::into_mut_slice
+RUSTSEC-2023-0074,zerocopy,">=0.3.0, <0.3.2",zerocopy::Ref::into_mut_slice
+RUSTSEC-2023-0074,zerocopy,">=0.4.0, <0.4.1",zerocopy::Ref::into_mut_slice
+RUSTSEC-2023-0074,zerocopy,">=0.5.0, <0.5.2",zerocopy::Ref::into_mut_slice
+RUSTSEC-2023-0074,zerocopy,">=0.6.0, <0.6.6",zerocopy::Ref::into_mut_slice
+RUSTSEC-2023-0074,zerocopy,">=0.7.0, <0.7.31",zerocopy::Ref::into_mut_slice
+RUSTSEC-2023-0074,zerocopy,">=0.2.2, <0.2.9",zerocopy::Ref::into_ref
+RUSTSEC-2023-0074,zerocopy,">=0.3.0, <0.3.2",zerocopy::Ref::into_ref
+RUSTSEC-2023-0074,zerocopy,">=0.4.0, <0.4.1",zerocopy::Ref::into_ref
+RUSTSEC-2023-0074,zerocopy,">=0.5.0, <0.5.2",zerocopy::Ref::into_ref
+RUSTSEC-2023-0074,zerocopy,">=0.6.0, <0.6.6",zerocopy::Ref::into_ref
+RUSTSEC-2023-0074,zerocopy,">=0.7.0, <0.7.31",zerocopy::Ref::into_ref
+RUSTSEC-2023-0074,zerocopy,">=0.2.2, <0.2.9",zerocopy::Ref::into_slice
+RUSTSEC-2023-0074,zerocopy,">=0.3.0, <0.3.2",zerocopy::Ref::into_slice
+RUSTSEC-2023-0074,zerocopy,">=0.4.0, <0.4.1",zerocopy::Ref::into_slice
+RUSTSEC-2023-0074,zerocopy,">=0.5.0, <0.5.2",zerocopy::Ref::into_slice
+RUSTSEC-2023-0074,zerocopy,">=0.6.0, <0.6.6",zerocopy::Ref::into_slice
+RUSTSEC-2023-0074,zerocopy,">=0.7.0, <0.7.31",zerocopy::Ref::into_slice
+RUSTSEC-2024-0401,zlib-rs,<=0.3.1,zlib_rs::inflate::inflate
+RUSTSEC-2016-0001,openssl,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2016-0002,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2016-0003,portaudio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2017-0001,sodiumoxide,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2017-0002,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2017-0003,security-framework,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2017-0004,base64,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2017-0005,cookie,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2017-0006,rmpv,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0001,untrusted,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0002,tar,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0003,smallvec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0004,claxon,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0005,serde_yaml,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0006,yaml-rust,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0007,trust-dns-proto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0008,slice-deque,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0009,crossbeam,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0010,openssl,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0011,arrayfire,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0012,orion,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0013,safe-transmute,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0014,chan,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0015,term,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0017,tempdir,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0018,smallvec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0019,actix-web,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0020,libpulse-binding,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2018-0022,temporary,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0002,slice-deque,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0004,libp2p-core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0007,asn1_der,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0008,simd-json,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0011,memoffset,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0016,chttp,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0019,blake2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0020,generator,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0021,linea,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0022,portaudio-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0023,string-interner,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0024,rustsec-example-crate,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0025,serde_cbor,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0029,chacha20,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0030,streebog,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0031,spin,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0032,crust,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0038,libpulse-binding,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2019-0040,boxfnonce,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0001,trust-dns-server,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0002,prost,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0004,lucet-runtime-internals,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0005,cbox,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0006,bumpalo,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0008,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0011,plutonium,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0012,os_str_bytes,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0013,fake-static,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0015,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0016,net2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0018,block-cipher-trait,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0019,tokio-rustls,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0020,stb_truetype,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0021,rio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0022,ozone,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0024,tough,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0026,linked-hash-map,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0027,traitobject,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0029,rgb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0030,mozwire,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0031,tiny_http,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0032,alpm-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0033,alg_ds,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0034,arr,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0035,chunky,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0037,crayon,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0038,ordnung,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0039,simple-slab,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0040,obstack,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0041,sized-chunks,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0042,stack,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0043,ws,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0044,atom,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0045,actix-utils,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0046,actix-service,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0047,array-queue,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0048,actix-http,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0049,actix-codec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0050,dync,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0051,rustsec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0052,crossbeam-channel,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0053,dirs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0054,directories,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0055,libpulse-binding,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0057,block-cipher,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0058,stream-cipher,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0063,safe-nd,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0064,ffi_utils,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0065,fake_clock,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0066,safe_bindgen,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0067,quic-p2p,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0072,futures-intrusive,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0074,pyo3,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0076,routing,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0078,net2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0079,socket2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0080,miow,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0081,mio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0082,ordered-float,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0083,safe_app,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0084,safe_authenticator,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0085,safe_vault,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0086,safe_core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0087,try-mutex,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0088,magnetic,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0089,nanorand,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0090,thex,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0092,concread,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0094,reffers,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0096,im,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0097,xcb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0098,rusb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0099,aovec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0101,conquer-once,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0102,late-static,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0103,autorand,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0104,gfwx,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0105,abi_stable,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0106,multiqueue2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0107,hashconsing,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0108,eventio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0111,may_queue,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0112,buttplug,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0113,atomic-option,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0114,va-ts,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0115,ruspiro-singleton,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0116,unicycle,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0117,conqueue,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0118,tiny_future,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0119,ticketed_lock,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0120,libsbc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0121,abox,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0122,beef,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0123,libp2p-deflate,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0124,async-coap,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0125,convec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0126,signal-simple,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0127,v9,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0128,cache,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0129,kekbit,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0130,bunch,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0131,rcu_cell,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0132,array-tools,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0133,scottqueue,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0134,parc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0135,slock,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0136,toolshed,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0137,lever,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0138,lexer,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0139,dces,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0140,model,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0141,noise_search,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0142,syncpool,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0143,multiqueue,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0146,generic-array,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0148,cgc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0149,appendix,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0150,disrustor,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0151,generator,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0152,max7301,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0153,bite,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0154,buffoon,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0155,acc_reader,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0156,libsecp256k1-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0157,vm-memory,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0159,chrono,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0160,shamir,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0161,array-macro,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0166,personnummer,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2020-0167,pnet_packet,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0001,mdbook,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0004,lazy-init,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0005,glsl-layout,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0006,cache,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0007,av-data,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0008,bra,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0009,basic_dsp_matrix,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0010,containers,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0011,fil-ocl,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0012,cdr,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0013,raw-cpuid,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0014,marc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0015,calamine,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0016,ms3d,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0017,postscript,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0019,xcb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0020,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0021,nb-connect,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0024,safe-api,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0025,jsonrpc-quic,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0026,comrak,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0029,truetype,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0032,byte_struct,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0035,quinn,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0036,internment,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0039,endian_trait,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0040,arenavec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0042,insert_many,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0043,uu_od,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0044,rocket,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0045,adtensor,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0046,telemetry,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0047,slice-deque,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0048,stackvector,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0049,through,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0050,reorder,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0051,outer_cgi,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0052,id-map,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0053,algorithmica,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0055,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0056,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0057,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0058,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0059,aesni,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0060,aes-soft,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0061,aes-ctr,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0062,miscreant,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0063,comrak,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0064,cpuid-bool,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0066,evm-core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0067,cranelift-codegen,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0070,nalgebra,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0074,ammonia,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0076,libsecp256k1,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0078,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0079,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0081,actix-http,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0082,vec-const,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0084,bronzedb-protocol,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0085,binjs_io,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0086,flumedb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0087,columnar,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0088,csv-sniffer,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0089,raw-cpuid,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0090,ash,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0091,gfx-auxil,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0092,messagepack-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0093,crossbeam-deque,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0094,rdiff,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0095,mopa,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0097,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0098,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0099,cosmos_sdk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0100,sha2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0101,pleaser,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0102,pleaser,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0103,molecule,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0104,pleaser,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0105,git-delta,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0106,bat,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0107,ckb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0108,ckb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0109,ckb,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0111,tremor-script,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0112,tectonic_xdv,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0113,metrics-util,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0115,zeroize_derive,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0116,arrow,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0117,arrow,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0118,arrow,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0120,abomonation,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0122,flatbuffers,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0125,simple_asn1,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0126,rust-embed,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0129,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0131,brotli-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0132,compu-brotli-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0135,tower-http,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0136,sass-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0137,sodiumoxide,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0138,mz-avro,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0145,atty,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0146,twoway,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2021-0147,daemonize,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0005,ftd2xx-embedded-hal,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0006,thread_local,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0007,qcell,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0008,windows,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0010,enum-map,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0011,rust-crypto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0012,arrow2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0013,regex,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0014,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0017,array-macro,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0019,crossbeam-channel,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0020,crossbeam,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0021,crossbeam-queue,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0022,hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0023,static_type_map,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0025,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0026,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0027,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0029,crossbeam,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0030,rulex,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0031,rulex,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0032,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0033,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0034,pkcs11,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0035,websocket,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0036,r2d2_odbc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0037,async-graphql,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0038,juniper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0039,odbc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0040,owning_ref,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0041,crossbeam-utils,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0042,rustdecimal,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0043,tower-http,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0044,markdown,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0045,oqs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0047,oqs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0048,xml-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0051,lz4-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0052,os_socketaddr,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0055,axum-core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0058,inconceivable,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0059,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0061,parity-wasm,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0062,matrix-sdk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0063,linked_list_allocator,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0064,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0065,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0066,conduit-hyper,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0068,capnp,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0069,hyper-staticfile,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0072,hyper-staticfile,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0073,alloc-cortex-m,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0074,prettytable-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0075,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0079,elf_rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0082,warp,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0083,evm,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0084,libp2p,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0085,matrix-sdk-crypto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0086,slack-morphism,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0087,slack-morphism,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0088,tauri,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0089,aliyun-oss-client,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0090,libsqlite3-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0091,tauri,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0092,rmp-serde,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0093,ed25519-dalek,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0094,mimalloc,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0095,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0096,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0097,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0098,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0099,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0100,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0101,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2022-0102,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0001,tokio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0002,git2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0003,libgit2-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0004,bzip2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0005,tokio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0006,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0007,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0008,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0009,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0010,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0011,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0012,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0013,openssl-src,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0014,cortex-m-rt,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0015,ascii,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0016,partial_sort,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0021,stb_image,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0025,git-hash,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0026,git-path,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0027,async-nats,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0029,nats,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0030,versionize,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0031,spin,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0033,borsh,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0034,h2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0035,enumflags2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0037,xsalsa20poly1305,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0038,sequoia-openpgp,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0039,buffered-reader,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0041,trust-dns-server,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0042,ouroboros,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0046,cyfs-base,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0047,lmdb-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0052,webpki,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0053,rustls-webpki,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0055,lexical,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0057,inventory,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0058,inventory,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0059,users,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0060,libwebp-sys2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0061,libwebp-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0062,bcder,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0063,quinn-proto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0064,gix-transport,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0065,tungstenite,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0066,pleaser,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0069,sudo-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0070,self_cell,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0071,rsa,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0075,unsafe-libyaml,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0077,rosenpass,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0079,pqc_kyber,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0085,hpack,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0086,lexical-core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0087,simd-json-derive,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0090,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0091,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0092,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2023-0093,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0001,ferris-says,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0003,h2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0005,threadalone,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0008,trillium-client,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0009,trillium-http,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0011,snow,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0012,serde-json-wasm,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0016,libdav1d-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0017,cassandra-cpp,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0331,puccinier,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0332,h2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0335,gix-transport,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0337,zip_next,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0338,cosmwasm-std,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0339,tor-circmgr,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0340,tor-circmgr,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0342,vodozemac,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0344,curve25519-dalek,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0346,zerovec-derive,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0347,zerovec,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0348,gix-index,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0349,gix-worktree,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0350,gix-fs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0351,gix-ref,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0352,gix-index,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0353,gix-worktree,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0354,vodozemac,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0358,object_store,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0359,gix-attributes,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0361,cosmwasm-vm,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0362,alloy-json-abi,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0363,sqlx,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0364,gitoxide-core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0365,diesel,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0366,cosmwasm-vm,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0372,ic-cdk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0373,quinn-proto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0376,tonic,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0377,dbn,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0379,fast-float,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0380,pqcrypto-dilithium,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0381,pqcrypto-kyber,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0387,opentelemetry_api,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0391,paillier-zk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0392,cggmp21-keygen,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0393,cggmp21,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0395,chrono-english,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0398,sharks,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0399,rustls,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0400,ruzstd,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0403,js-sandbox,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0405,rustyscript,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0406,ic-stable-structures,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0407,linkme,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0409,pyo3,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0410,gdkwayland,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0411,gdkwayland-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0412,gdk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0413,atk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0414,gdkx11-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0415,gtk,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0416,atk-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0417,gdkx11,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0418,gdk-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0419,gtk3-macros,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0420,gtk-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0421,idna,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0422,gtk-layer-shell,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0423,gtk-layer-shell-sys,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0430,magic-crypt,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0432,rage,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0434,matrix-sdk-crypto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0436,paste,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0438,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0439,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0440,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2024-0441,wasmtime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0007,ring,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0008,openh264-sys2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0009,ring,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0014,humantime,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0015,web-push,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0017,trust-dns-proto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0019,array-init-cursor,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0023,tokio,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0024,crossbeam-channel,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0028,cve-rs,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0029,totally-safe,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0030,totally-safe-transmute,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0035,macroquad,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0037,pingora-core,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0038,arrow2,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0040,users,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0041,matrix-sdk-crypto,-,δ�ҵ���Ӱ��ĺ���
+RUSTSEC-2025-0046,wasmtime,-,δ�ҵ���Ӱ��ĺ���
