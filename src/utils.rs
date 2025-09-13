@@ -1,5 +1,4 @@
 use anyhow::Context;
-use fs_extra::dir::{copy as dir_copy, CopyOptions};
 use futures::stream::{self as futures_stream, StreamExt};
 use semver::{Version, VersionReq};
 use std::{collections::VecDeque, path::Path};
@@ -251,28 +250,33 @@ pub async fn copy_dir(from: &Path, to: &Path, overwrite: bool) -> anyhow::Result
         })?;
     }
 
-    let mut options = CopyOptions::new();
-    options.overwrite = overwrite;
-    options.skip_exist = true;
-    options.copy_inside = false; // 改为 false，因为目标目录已存在
-    options.content_only = true;
+    // 使用 rsync 进行复制，更可靠且支持增量复制
+    let mut cmd = tokio::process::Command::new("rsync");
+    cmd.args(["-a", "--delete"]);
 
-    let from_path_dir_exist = from_path.exists();
-    let to_path_dir_exist = to_path.exists();
+    if !overwrite {
+        cmd.arg("--ignore-existing");
+    }
 
-    tokio::task::spawn_blocking(move || dir_copy(&from_path, &to_path, &options))
+    cmd.args([
+        &format!("{}/", from_path.to_string_lossy()), // 源目录加斜杠表示复制内容
+        &to_path.to_string_lossy().into_owned(),
+    ]);
+
+    let output = cmd
+        .output()
         .await
-        .map_err(|e| anyhow::anyhow!("thread pool execute copy task failed: {e}"))?
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to copy directory from {} (exists: {}) to {} (exists: {}): {}",
-                from.to_string_lossy(),
-                from_path_dir_exist,
-                to.to_string_lossy(),
-                to_path_dir_exist,
-                e
-            )
-        })?;
+        .map_err(|e| anyhow::anyhow!("Failed to execute rsync command: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow::anyhow!(
+            "Failed to copy directory from {} to {}: {}",
+            from.to_string_lossy(),
+            to.to_string_lossy(),
+            stderr
+        ));
+    }
 
     Ok(())
 }

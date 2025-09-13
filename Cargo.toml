@@ -40,7 +40,6 @@ sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "time"] }
 once_cell = "1.18"
 dotenv = "0.15"
 toml_edit = "0.22"
-fs_extra = "1.3.0"
 chrono = "0.4.41"
 nix = { version = "0.29", features = ["signal"] }
 csv = "1.3"
