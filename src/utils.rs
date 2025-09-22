@@ -239,6 +239,14 @@ pub async fn copy_dir(from: &Path, to: &Path, overwrite: bool) -> anyhow::Result
     let from_path = from.to_path_buf();
     let to_path = to.to_path_buf();
 
+    // 确保源目录存在
+    if !from_path.exists() {
+        return Err(anyhow::anyhow!(
+            "Source directory does not exist: {}",
+            from_path.display()
+        ));
+    }
+
     // 确保目标目录存在
     if !to_path.exists() {
         tokio_fs::create_dir_all(&to_path).await.map_err(|e| {
@@ -250,33 +258,140 @@ pub async fn copy_dir(from: &Path, to: &Path, overwrite: bool) -> anyhow::Result
         })?;
     }
 
-    // 使用 rsync 进行复制，更可靠且支持增量复制
-    let mut cmd = tokio::process::Command::new("rsync");
-    cmd.args(["-a", "--delete"]);
+    // 添加重试机制来处理文件消失的问题
+    let max_retries = 3;
+    let mut last_error = None;
 
-    if !overwrite {
-        cmd.arg("--ignore-existing");
+    for attempt in 0..max_retries {
+        tracing::debug!(
+            "Copying directory from {} to {} (attempt {}/{})",
+            from_path.display(),
+            to_path.display(),
+            attempt + 1,
+            max_retries
+        );
+
+        // 使用 rsync 进行复制，更可靠且支持增量复制
+        let mut cmd = tokio::process::Command::new("rsync");
+        cmd.args(["-a", "--delete", "--partial", "--inplace"]);
+
+        if !overwrite {
+            cmd.arg("--ignore-existing");
+        }
+
+        // 添加更多选项来处理文件消失问题
+        cmd.args(["--no-whole-file", "--checksum"]);
+
+        cmd.args([
+            &format!("{}/", from_path.to_string_lossy()), // 源目录加斜杠表示复制内容
+            &to_path.to_string_lossy().into_owned(),
+        ]);
+
+        let output = cmd
+            .output()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to execute rsync command: {}", e))?;
+
+        // 检查退出状态
+        let exit_code = output.status.code().unwrap_or(-1);
+
+        // rsync退出码24表示部分文件传输失败（文件消失等），但其他文件可能成功
+        if exit_code == 24 {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::warn!(
+                "rsync completed with warnings (exit code 24): {}. Attempt {}/{}",
+                stderr,
+                attempt + 1,
+                max_retries
+            );
+
+            // 验证关键文件是否存在
+            if validate_copied_files(&from_path, &to_path).await {
+                tracing::info!("Copy completed successfully despite warnings");
+                return Ok(());
+            } else {
+                last_error = Some(anyhow::anyhow!(
+                    "Copy validation failed after rsync warnings: {}",
+                    stderr
+                ));
+                continue;
+            }
+        } else if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            last_error = Some(anyhow::anyhow!(
+                "rsync failed with exit code {}: {}",
+                exit_code,
+                stderr
+            ));
+
+            if attempt < max_retries - 1 {
+                tracing::warn!(
+                    "rsync failed, retrying in 1 second... (attempt {}/{})",
+                    attempt + 1,
+                    max_retries
+                );
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                continue;
+            }
+        } else {
+            // 成功完成
+            tracing::debug!("Copy completed successfully");
+            return Ok(());
+        }
     }
 
-    cmd.args([
-        &format!("{}/", from_path.to_string_lossy()), // 源目录加斜杠表示复制内容
-        &to_path.to_string_lossy().into_owned(),
-    ]);
-
-    let output = cmd
-        .output()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to execute rsync command: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(anyhow::anyhow!(
-            "Failed to copy directory from {} to {}: {}",
+    // 所有重试都失败了
+    Err(last_error.unwrap_or_else(|| {
+        anyhow::anyhow!(
+            "Failed to copy directory from {} to {} after {} attempts",
             from.to_string_lossy(),
             to.to_string_lossy(),
-            stderr
-        ));
+            max_retries
+        )
+    }))
+}
+
+/// 验证复制的文件是否完整
+async fn validate_copied_files(from: &Path, to: &Path) -> bool {
+    // 检查关键文件是否存在
+    let critical_files = ["Cargo.toml", "src/lib.rs", "src/main.rs"];
+
+    for file in &critical_files {
+        let from_file = from.join(file);
+        let to_file = to.join(file);
+
+        // 如果源文件存在，目标文件也应该存在
+        if from_file.exists() && !to_file.exists() {
+            tracing::warn!("Critical file missing after copy: {}", to_file.display());
+            return false;
+        }
     }
 
-    Ok(())
+    // 检查目录结构
+    if let Ok(mut entries) = tokio_fs::read_dir(from).await {
+        let mut from_count = 0;
+        let mut to_count = 0;
+
+        while let Ok(Some(_)) = entries.next_entry().await {
+            from_count += 1;
+        }
+
+        if let Ok(mut entries) = tokio_fs::read_dir(to).await {
+            while let Ok(Some(_)) = entries.next_entry().await {
+                to_count += 1;
+            }
+        }
+
+        // 如果目标目录文件数量明显少于源目录，可能复制不完整
+        if to_count < from_count / 2 {
+            tracing::warn!(
+                "Target directory has significantly fewer files ({} vs {})",
+                to_count,
+                from_count
+            );
+            return false;
+        }
+    }
+
+    true
 }

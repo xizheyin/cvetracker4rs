@@ -50,17 +50,19 @@ impl Krate {
         tracing::debug!("!working src code dir: {:?}", krate.working_src_code_dir);
 
         // download into download directory and unzip into extract directory
-        krate
-            .fetch_and_unzip_crate()
-            .await
-            .expect("Failed to fetch and unzip crate");
+        krate.fetch_and_unzip_crate().await?;
         // copy the crate to the working directory
         // now, we have a copy of the crate in the
         // working directory, which can be modified anyway
-        krate
-            .cp_crate_to_working_dir()
-            .await
-            .expect("Failed to copy crate to working directory");
+        if let Err(e) = krate.cp_crate_to_working_dir().await {
+            tracing::error!(
+                "Failed to copy crate {}:{} to working directory: {}",
+                name,
+                version,
+                e
+            );
+            return Err(e.context("Failed to copy crate to working directory"));
+        }
         Ok(krate)
     }
 
@@ -271,7 +273,6 @@ impl Krate {
                 // if the attempt is greater than 0, we need to force the download and unzip
                 let force = attempt > 0;
                 if let Err(e) = self.download(force).await {
-                    tracing::error!("Failed to download the crate: {}", e);
                     return Err(anyhow::anyhow!("download() failed: {}", e));
                 }
 
@@ -321,12 +322,45 @@ impl Krate {
             extract_dir.display(),
             working_src_code_dir.display()
         );
+
+        // 验证源目录是否存在且包含必要文件
+        if !extract_dir.exists() {
+            return Err(anyhow::anyhow!(
+                "Source directory does not exist: {}",
+                extract_dir.display()
+            ));
+        }
+
+        let cargo_toml_path = extract_dir.join("Cargo.toml");
+        if !cargo_toml_path.exists() {
+            return Err(anyhow::anyhow!(
+                "Cargo.toml not found in source directory: {}",
+                extract_dir.display()
+            ));
+        }
+
+        // 执行复制操作
         match utils::copy_dir(&extract_dir, &working_src_code_dir, false).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(anyhow::anyhow!(
-                "Failed to copy the crate to the working directory: {}",
-                e
-            )),
+            Ok(_) => {
+                tracing::info!(
+                    "Successfully copied crate {}:{} to working directory",
+                    self.name,
+                    self.version
+                );
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Failed to copy crate {}:{} to working directory: {}",
+                    self.name,
+                    self.version,
+                    e
+                );
+                Err(anyhow::anyhow!(
+                    "Failed to copy the crate to the working directory: {}",
+                    e
+                ))
+            }
         }
     }
 

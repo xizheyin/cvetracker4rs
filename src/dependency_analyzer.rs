@@ -62,7 +62,11 @@ impl DependencyAnalyzer {
         // push CVE node to bfs_queue
         for (_, version) in two_end_versions {
             let ver_str = &version.to_string();
-            let cve_krate = Krate::create(crate_name, ver_str, 0, self.fs_manager.clone()).await?;
+            let Ok(cve_krate) =
+                Krate::create(crate_name, ver_str, 0, self.fs_manager.clone()).await
+            else {
+                continue;
+            };
             let bfs_node = Arc::new(BFSNode {
                 krate: cve_krate,
                 parent: None,
@@ -117,9 +121,20 @@ impl DependencyAnalyzer {
         let analyzer = Arc::new(self.clone());
         Ok(futures_stream::iter(current_level)
             .map(async |bfs_node| {
-                analyzer
-                    .process_single_bfs_node(bfs_node, target_function_paths, &logs_dir)
+                match analyzer
+                    .process_single_bfs_node(bfs_node.clone(), target_function_paths, &logs_dir)
                     .await
+                {
+                    Ok(res) => res,
+                    Err(e) => {
+                        tracing::error!(
+                            "Failed to process single BFS node {}: {}",
+                            bfs_node.krate.name,
+                            e
+                        );
+                        vec![]
+                    }
+                }
             })
             .buffer_unordered(
                 env::var("MAX_CONCURRENT_BFS_NODES")
@@ -130,7 +145,6 @@ impl DependencyAnalyzer {
             .collect::<Vec<_>>()
             .await
             .into_iter()
-            .flatten()
             .flatten()
             .collect::<Vec<_>>())
     }
@@ -227,8 +241,7 @@ impl DependencyAnalyzer {
                     working_src_code_dir.display(),
                     e
                 )
-            })
-            .unwrap();
+            })?;
 
             tracing::info!("[{cveid}:{krate_name}:{krate_version}] Starting function analysis");
             let analysis_result =
