@@ -8,10 +8,9 @@ services:
     image: cvetracker4rs:latest
     container_name: cvetracker4rs
 
-    # Resource limits (docker-compose 2.2 format)
-    mem_limit: 192g # 限制内存使用4GB
-    cpus: 96.0 # 限制使用2个CPU核心
-    mem_reservation: 64g # 保留1GB内存
+    # Resource limits (Docker Compose syntax)
+    cpus: 64.0 # 限制使用8个CPU核心
+    mem_limit: 80g # 限制内存使用16GB
 
     # Volume mappings - 将容器内的结果映射到主机
     volumes:
