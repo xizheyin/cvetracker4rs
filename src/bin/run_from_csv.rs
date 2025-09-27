@@ -43,10 +43,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let log_dir = format!("logs/{}", chrono::Utc::now().format("%Y-%m-%d_%H-%M-%S"));
 
+    let start_time = chrono::Local::now();
     for (idx, row) in rows.into_iter().enumerate() {
         pb.set_message(format!(
-            "处理: {} {} {}",
-            row.cve_id, row.crate_name, row.version_range
+            "处理: {} {} {}, {}",
+            row.cve_id,
+            row.crate_name,
+            row.version_range,
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
         ));
         pb.inc(1);
 
@@ -73,7 +77,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // 每个任务结束后给出完成提示
         let _ = mp.println(format!("完成: {} ({}/{})", row.cve_id, idx + 1, total_rows));
     }
-    pb.finish_with_message("全部完成");
+    pb.finish_with_message(format!(
+        "全部完成, 时间是：{}, 经过了 {} 时间",
+        chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+        (chrono::Local::now() - start_time).num_minutes()
+    ));
 
     Ok(())
 }
