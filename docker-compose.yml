@@ -1,0 +1,70 @@
+version: '2.2'
+
+services:
+  cvetracker4rs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cvetracker4rs:latest
+    container_name: cvetracker4rs
+
+    # Resource limits (docker-compose 2.2 format)
+    mem_limit: 192g # 限制内存使用4GB
+    cpus: 96.0 # 限制使用2个CPU核心
+    mem_reservation: 64g # 保留1GB内存
+
+    # Volume mappings - 将容器内的结果映射到主机
+    volumes:
+      - ./analysis_results:/app/analysis_results # 分析结果目录
+      - ./logs:/app/logs # 日志目录
+      - ./data/downloads:/data/downloads # 下载目录
+      - ./data/working:/data/working # 工作目录
+      - ./csv:/app/csv:ro # CSV文件（只读）
+
+    # Environment variables
+    environment:
+      - RUST_LOG=info
+      - DOWNLOAD_DIR=/data/downloads
+      - WORKING_DIR=/data/working
+      # PostgreSQL connection settings
+      - PG_HOST=localhost:5432
+      - PG_USER=${PG_USER:-postgres}
+      - PG_PASSWORD=${PG_PASSWORD:-123}
+      - PG_DATABASE=${PG_DATABASE:-crates_io}
+
+    # Use host network to access host PostgreSQL
+    network_mode: host
+
+    # Alternative: use extra_hosts if you prefer bridge network
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    # networks:
+    #   - cvetracker-network
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Default command (can be overridden)
+    command: [ "cvetracker4rs", "--help" ]
+  # 注意：使用主机PostgreSQL数据库，不需要单独的数据库容器
+  # 如果需要独立的数据库容器，可以取消注释以下配置：
+  # postgres:
+  #   image: postgres:15
+  #   container_name: cvetracker-db
+  #   environment:
+  #     POSTGRES_DB: crates_io
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: 123
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+
+  # 使用host网络模式时不需要自定义网络
+  # networks:
+  #   cvetracker-network:
+  #     driver: bridge
+
+  # volumes:
+  #   postgres_data:

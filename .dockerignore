@@ -1,0 +1,41 @@
+# Git files
+.git
+.gitignore
+.gitmodules
+
+# Build artifacts
+target/
+*/target/
+callgraph4rs/target/
+
+# IDE files
+.vscode/
+
+
+# Logs
+logs/
+logs_cg4rs
+
+
+# Documentation
+README.md
+*.md
+docs/
+
+# CI/CD
+.github/
+
+# Analysis results (will be mounted as volume)
+analysis_results/
+
+
+data/
+
+# Temporary files
+tmp/
+temp/
+
+# Docker files (not needed in build context)
+Dockerfile
+docker-compose.yml
+.dockerignore
