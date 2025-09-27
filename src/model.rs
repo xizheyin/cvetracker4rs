@@ -298,12 +298,13 @@ impl Krate {
             match result {
                 Ok(path) => return Ok(path),
                 Err(e) => {
-                    last_err = Some(e);
                     tracing::warn!(
-                        "No Cargo.toml found in {} (attempt {}/3), will retry if attempts remain",
+                        "fetch_and_unzip_crate: failed to download and unzip crate {} (attempt {}/3), will retry if attempts remain: {:?}",
                         extract_dir_path.display(),
-                        attempt + 1
+                        attempt + 1,
+                        e
                     );
+                    last_err = Some(e);
                     // 删除解压目录，准备重试
                     let _ = tokio_fs::remove_dir_all(&extract_dir_path).await;
                 }
@@ -372,14 +373,17 @@ impl Krate {
             return Ok(());
         }
         tracing::info!("cargo_clean: {}", manifest_path.display());
-        let output = Command::new("cargo")
+        let output = match Command::new("cargo")
             .args(["clean", "--manifest-path", &manifest_path.to_string_lossy()])
             .output()
             .await
-            .context(format!(
-                "执行 cargo clean 失败: {}",
-                manifest_path.display()
-            ))?;
+        {
+            Ok(output) => output,
+            Err(e) => {
+                tracing::warn!("cargo clean 执行失败: {}", e);
+                return Err(anyhow::anyhow!("cargo clean 执行失败: {}", e));
+            }
+        };
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             tracing::warn!("cargo clean 执行失败: {}", stderr);
