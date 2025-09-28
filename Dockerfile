@@ -16,30 +16,33 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy project files (excluding files listed in .dockerignore)
-COPY . .
+RUN cargo --version
 
-# Build callgraph4rs first (since main project depends on it)
+# Copy toolchain and dependency files first for better caching
+COPY rust-toolchain.toml .
+COPY Cargo.toml Cargo.lock ./
+COPY callgraph4rs ./callgraph4rs/
+COPY src/ ./src/
+
+
+
+# Build dependencies only
 WORKDIR /app/callgraph4rs
-RUN cargo build --release
-
+RUN cargo build --release --bins
 # Install callgraph4rs binaries
 RUN cp target/release/cg4rs /usr/local/bin/
 RUN cp target/release/cargo-cg4rs /usr/local/bin/
 RUN cp target/release/call-cg4rs /usr/local/bin/
 
-# Build main project
 WORKDIR /app
-RUN cargo build --release
-
+RUN cargo build --release --bins
 # Install main project binaries
 RUN cp target/release/cvetracker4rs /usr/local/bin/
 RUN cp target/release/run_from_csv /usr/local/bin/
 RUN cp target/release/stats /usr/local/bin/
 
-# Set environment variables
-ENV RUST_LOG=info
-ENV RUST_BACKTRACE=1
+# Finally, Copy env
+COPY .env .
 
 # Create necessary directories
 RUN mkdir -p /data/downloads /data/working /app/logs /app/analysis_results
