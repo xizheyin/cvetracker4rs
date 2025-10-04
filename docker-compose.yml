@@ -16,6 +16,7 @@ services:
     volumes:
       - ./analysis_results:/app/analysis_results # 分析结果目录
       - ./logs:/app/logs # 日志目录
+      - ./logs_cg4rs:/app/logs_cg4rs # 日志目录
       - ./data/downloads:/data/downloads # 下载目录
       - ./data/working:/data/working # 工作目录
       - ./csv:/app/csv:ro # CSV文件（只读）
