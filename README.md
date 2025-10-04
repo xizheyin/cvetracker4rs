@@ -21,48 +21,117 @@ cargo build --release
 ```
 
 ### 准备 crates.io 数据库（必需）
-本项目依赖 PostgreSQL 中的 crates.io 数据快照（包含 `crates`、`versions`、`dependencies` 等表）。请先在本地/服务器恢复官方数据 dump。
 
-1) 安装 PostgreSQL（建议 13+）
+本项目依赖于一个包含了 crates.io 完整数据的 PostgreSQL 数据库。我们强烈推荐使用项目提供的 Docker 脚本来自动完成所有设置。
 
-2) 创建用户与数据库（示例）
+#### 方式一：一键自动部署（推荐）
+
+这是最简单、最快捷的方式。你只需要一个能正常工作的 Docker 环境。
+
+1.  **确保 Docker 和 Docker Compose 已安装**。
+2.  **执行一键部署脚本**：
+    ```bash
+    ./run-docker.sh db-oneclick
+    ```
+
+这个命令会自动完成以下所有工作：
+- 下载官方的 crates.io 数据库快照到 `./data/cratesio_dump/db-dump.tar.gz`（如果本地没有的话）。
+- 解压缩数据到 `./data/cratesio_dump/` 目录。
+- 启动一个 PostgreSQL 数据库容器（docker-compose.yml中的postgres服务）。
+- 自动创建数据库表结构并导入所有数据（scripts/init-cratesio.sh）。
+- 等待导入完成后给出成功提示。
+
+**注意**：首次执行时，数据导入过程会非常耗时（可能需要30分钟到数小时，取决于你的网络和磁盘性能），请耐心等待脚本执行完成。
+**tips**: 我们可以把import.sql中只保留crates、versions、dependencies这三张表的导入语句，其他表的导入语句可以注释掉。这样可以节省大量时间
+
+导入过程输出的log是这样：
 ```bash
-# 使用 postgres 超级用户创建
-psql -h localhost -U postgres -c "CREATE ROLE rust LOGIN PASSWORD 'rust';"
-psql -h localhost -U postgres -c "CREATE DATABASE crates_io_db OWNER rust;"
+rust@rust-PowerEdge-R750xs:/mnt/shixin/cvetracker4rs$ ./run-docker.sh db-oneclick
+[INFO] 创建必要的目录...
+[SUCCESS] 目录创建完成
+[WARNING] 将清理旧容器与数据卷，确保执行全新导入（postgres_data 将被删除）。
+[+] Running 2/2
+ ✔ Container cratesio-db               Removed                                                                           0.1s 
+ ✔ Volume cvetracker4rs_postgres_data  Removed                                                                           0.5s 
+[INFO] 检测到已存在的 dump 压缩包，跳过下载: ./data/db-dump.tar.gz
+[INFO] 检测到 ./data/cratesio_dump 已存在且非空，跳过解压步骤
+[INFO] 启动 Postgres 并自动执行初始化脚本导入...
+[+] Running 3/3
+ ✔ Volume cvetracker4rs_postgres_data                                  Created                                           0.0s 
+ ✔ Container cratesio-db                                               Started                                           0.2s 
+ ! postgres Published ports are discarded when using host network mode                                                   0.0s 
+[INFO] 等待导入完成（检测日志标记）...
+[SUCCESS] 数据库导入完成！
+[INFO] 验证数据库连接...
+              now              
+-------------------------------
+ 2025-09-29 08:38:52.429571+00
+(1 row)
+
+[SUCCESS] 一键导入完成。
 ```
 
-3) 下载 crates.io 数据库 dump（官方公开快照）
-- 以下仅供参考，具体怎么建数据库，crates-io dump的数据里有readme，主要参考那个
-- 例如：从 crates.io 提供的数据库快照获取 dump 压缩包（定期更新）
+#### 方式二：使用 Docker 分步操作
 
-4) 恢复 dump 到数据库
-- 如果是 SQL 文件：
-```bash
-psql -h localhost -U rust -d crates_io_db -f crates-io-dump.sql
-```
-- 如果是自包含 dump（.dump/.tar）：
-```bash
-pg_restore -h localhost -U rust -d crates_io_db \
-  --clean --if-exists --no-owner --no-privileges crates-io-dump.tar
-```
+如果你已经手动下载了数据库快照，或者想要对流程有更多控制，可以使用以下命令。
 
-5) 验证表是否存在（任选其一）
-```bash
-psql -h localhost -U rust -d crates_io_db -c "SELECT COUNT(*) FROM crates;"
-psql -h localhost -U rust -d crates_io_db -c "SELECT COUNT(*) FROM versions;"
-psql -h localhost -U rust -d crates_io_db -c "SELECT COUNT(*) FROM dependencies;"
-```
+1.  **准备数据**：
+    - 下载 [crates.io 数据库快照](https://static.crates.io/db-dump.tar.gz) 并将其命名为 `db-dump.tar.gz` 放在 `./data/` 目录下。
+    - 解压它到 `./data/cratesio_dump/` 目录。（这时你也可以参考上面的tips来注释掉不需要的表的导入语句）
 
-6) 对应 .env 配置
-```bash
-PG_HOST=localhost:5432
-PG_USER=rust
-PG_PASSWORD=rust
-PG_DATABASE=crates_io_db
-```
+2.  **启动数据库服务**：
+    ```bash
+    ./run-docker.sh db-up
+    ```
+    首次启动时，脚本会自动导入位于 `./data/cratesio_dump/` 下的数据。你可以使用 `docker compose logs -f postgres` 来观察导入进度。
 
-注意：只读访问即可；如遇权限/所有者问题，恢复时可使用 `--no-owner --no-privileges`。本项目只执行只读查询（不会修改数据）。
+3.  **管理数据库**：
+    - **停止服务**：`./run-docker.sh db-down`
+    - **重置数据库**（删除所有数据并重新导入）：`./run-docker.sh db-reset`
+
+---
+
+<details>
+<summary><b>附：手动设置数据库（不使用 Docker）</b></summary>
+
+如果你不希望使用 Docker，也可以手动设置数据库。
+
+1) **安装 PostgreSQL**（建议版本 17）
+
+2) **创建用户与数据库**（示例）
+   ```bash
+   # 使用 postgres 超级用户创建
+   psql -h localhost -U postgres -c "CREATE ROLE rust LOGIN PASSWORD 'rust';"
+   psql -h localhost -U postgres -c "CREATE DATABASE crates_io_db OWNER rust;"
+   ```
+
+3) **下载并解压 crates.io 数据库 dump**
+   - 从 [官方快照](https://static.crates.io/db-dump.tar.gz) 获取 dump 压缩包。
+   - 解压后，你会得到 `schema.sql`, `import.sql` 和一个 `data/` 目录。
+
+4) **恢复 dump 到数据库**
+   - **第一步：创建表结构**
+     ```bash
+     psql -h localhost -U rust -d crates_io_db -f path/to/schema.sql
+     ```
+   - **第二步：导入数据**（仍然可以注释掉不必要的表的导入语句）
+     ```bash
+     # 这个脚本会从其所在目录的相对路径 data/ 中加载 CSV 文件
+     cd path/to/
+     psql -h localhost -U rust -d crates_io_db -f import.sql
+     ```
+
+5) **配置 .env 文件**
+   确保 `.env` 文件中的数据库连接信息与你手动创建的一致。
+   ```bash
+   PG_HOST=localhost:5432
+   PG_USER=rust
+   PG_PASSWORD=rust
+   PG_DATABASE=crates_io_db
+   ```
+</details>
+
+
 
 ### 环境变量（可用 `.env` 配置，已启用 dotenv）
 可以在项目根目录创建 `.env`：

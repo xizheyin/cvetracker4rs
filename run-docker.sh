@@ -36,8 +36,8 @@ check_docker() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose 未安装，请先安装 Docker Compose"
+    if ! docker compose version &> /dev/null; then
+        print_error "Docker Compose V2 未安装，请先安装 Docker Compose V2（使用 'docker compose'）"
         exit 1
     fi
 }
@@ -47,6 +47,19 @@ create_directories() {
     print_info "创建必要的目录..."
     mkdir -p analysis_results logs data/downloads data/working
     print_success "目录创建完成"
+}
+
+# 读取 .env
+ensure_env() {
+    if [ -f ".env" ]; then
+        source .env
+    else
+        print_warning ".env 未找到，使用默认值 PG_HOST=localhost:5432, PG_USER=postgres, PG_PASSWORD=123, PG_DATABASE=crates_io"
+        PG_HOST=${PG_HOST:-localhost:5432}
+        PG_USER=${PG_USER:-postgres}
+        PG_PASSWORD=${PG_PASSWORD:-123}
+        PG_DATABASE=${PG_DATABASE:-crates_io}
+    fi
 }
 
 # 构建Docker镜像
@@ -97,7 +110,7 @@ test_database() {
         
         # 在容器中测试连接
         create_directories
-        docker-compose run --rm cvetracker4rs /bin/bash -c "
+        docker compose run --rm cvetracker4rs /bin/bash -c "
             echo 'Testing database connection...'
             echo 'Host: $PG_HOST'
             echo 'User: $PG_USER'
@@ -118,6 +131,12 @@ show_help() {
     echo "  $0 stop                     # 停止容器"
     echo "  $0 clean                    # 清理容器和镜像"
     echo "  $0 test-db                  # 测试数据库连接"
+    echo "  $0 db-up                    # 启动 postgres（若 ./data/cratesio_dump 中已有 dump，首次启动将自动导入）"
+    echo "  $0 db-down                  # 直接停止 postgres 服务"
+    echo "  $0 db-import                # 在容器内强制执行导入（覆盖风险，谨慎使用；需先准备 ./data/cratesio_dump）"
+    echo "  $0 db-reset                 # 删除数据卷并重新初始化（重新导入最新 dump；需先准备 ./data/cratesio_dump）"
+    echo "  $0 db-oneclick              # 一键下载并导入 crates.io 数据库（清空旧数据）"
+
     echo ""
     echo "可用的命令:"
     echo "  cvetracker4rs [args...]     # 主程序"
@@ -154,11 +173,11 @@ run_command() {
     
     if [ ${#cmd_args[@]} -eq 0 ]; then
         # 没有参数，显示帮助
-        docker-compose run $docker_args cvetracker4rs cvetracker4rs --help
+        docker compose run $docker_args cvetracker4rs cvetracker4rs --help
     else
         # 运行指定命令
         print_info "运行命令: ${cmd_args[*]}"
-        docker-compose run $docker_args cvetracker4rs "${cmd_args[@]}"
+        docker compose run $docker_args cvetracker4rs "${cmd_args[@]}"
     fi
 }
 
@@ -166,18 +185,18 @@ run_command() {
 enter_shell() {
     create_directories
     print_info "进入容器 shell..."
-    docker-compose run --rm cvetracker4rs /bin/bash
+    docker compose run --rm cvetracker4rs /bin/bash
 }
 
 # 查看日志
 show_logs() {
-    docker-compose logs -f cvetracker4rs
+    docker compose logs -f cvetracker4rs
 }
 
 # 停止容器
 stop_containers() {
     print_info "停止容器..."
-    docker-compose down
+    docker compose down
     print_success "容器已停止"
 }
 
@@ -187,10 +206,148 @@ clean_up() {
     read -r response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
         print_info "清理容器和镜像..."
-        docker-compose down --rmi all --volumes --remove-orphans
+        docker compose down --rmi all --volumes --remove-orphans
         print_success "清理完成"
     else
         print_info "取消清理操作"
+    fi
+}
+
+
+
+# 直接启动 postgres（若 ./data/cratesio_dump 已有 dump，首次启动将自动导入）
+db_up() {
+    create_directories
+    print_info "启动 postgres 服务..."
+    docker compose up -d postgres
+    print_success "服务已启动：postgres"
+}
+
+# 直接停止 postgres 服务
+db_down() {
+    print_info "停止 postgres 服务..."
+    docker compose down -v
+    print_success "服务已停止：postgres"
+}
+
+# 重置数据库（删除数据卷并重新初始化，适合重新导入最新 dump，需先准备 ./data/cratesio_dump）
+db_reset() {
+    print_warning "将删除 postgres 数据卷并停止服务，所有数据会丢失。确定吗？(y/N)"
+    read -r reply
+    if [[ ! "$reply" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        print_info "已取消重置。"
+        return 0
+    fi
+    print_info "停止并删除容器与卷..."
+    docker compose down -v
+    print_info "重新启动导入流程（首次启动将自动执行初始化脚本）..."
+    docker compose up -d postgres
+    print_success "已重置并重新启动。请通过 'docker compose logs -f postgres' 观察初始化日志。"
+}
+
+# 强制执行导入（适用于已存在数据目录的情况，直接在容器内执行 psql）
+db_import() {
+    ensure_env
+    print_warning "将直接在现有数据库上执行 schema.sql + import.sql，可能覆盖或破坏现有数据，请谨慎！"
+    read -p "确定继续执行导入吗？(y/N) " -r reply
+    if [[ ! "$reply" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        print_info "已取消导入。"
+        return 0
+    fi
+    
+    print_info "检查 dump 文件是否已下载..."
+    docker compose exec -T cratesio-db sh -c 'ls -l /docker-entrypoint-initdb.d/dump/schema.sql /docker-entrypoint-initdb.d/dump/import.sql' || {
+        print_error "未找到 dump 文件，请先将 crates.io dump 下载并解压到 ./data/cratesio_dump，或执行: ./run-docker.sh db-oneclick"
+        return 1
+    }
+    
+    print_info "开始在容器内执行导入..."
+    docker compose exec -T cratesio-db bash -lc "cd /docker-entrypoint-initdb.d/dump && PGPASSWORD='$PG_PASSWORD' psql -v ON_ERROR_STOP=1 -U '$PG_USER' -d '$PG_DATABASE' -f schema.sql"
+    docker compose exec -T cratesio-db bash -lc "cd /docker-entrypoint-initdb.d/dump && PGPASSWORD='$PG_PASSWORD' psql -v ON_ERROR_STOP=1 -U '$PG_USER' -d '$PG_DATABASE' -f import.sql"
+    docker compose exec -T cratesio-db bash -lc "PGPASSWORD='$PG_PASSWORD' psql -v ON_ERROR_STOP=1 -U '$PG_USER' -d '$PG_DATABASE' -c 'VACUUM ANALYZE;'"
+    print_success "导入完成。"
+}
+
+
+
+
+# 一键下载并导入 crates.io 数据库（非交互，全新导入）
+db_oneclick() {
+    check_docker
+    ensure_env
+    create_directories
+    mkdir -p ./data/cratesio_dump
+
+    print_warning "将清理旧容器与数据卷，确保执行全新导入（postgres_data 将被删除）。"
+    docker compose down -v || true
+
+    local dump_path="./data/db-dump.tar.gz"
+    if [ -s "$dump_path" ]; then
+        print_info "检测到已存在的 dump 压缩包，跳过下载: $dump_path"
+    else
+        print_info "下载 crates.io dump 到: $dump_path"
+        if ! curl -L --retry 3 --retry-delay 5 -o "$dump_path" https://static.crates.io/db-dump.tar.gz; then
+            print_error "下载失败，请检查网络后重试。"
+            return 1
+        fi
+    fi
+
+    # 如果目录已存在且非空，则跳过解压
+    if [ -d ./data/cratesio_dump ] && [ -n "$(ls -A ./data/cratesio_dump 2>/dev/null)" ]; then
+        print_info "检测到 ./data/cratesio_dump 已存在且非空，跳过解压步骤"
+    else
+        print_info "解压 dump 到 ./data/cratesio_dump..."
+        if ! tar -xzf "$dump_path" -C ./data/cratesio_dump --strip-components=1; then
+            print_error "解压失败，请确认 tar 能解压该文件。"
+            return 1
+        fi
+    fi
+
+    chmod -R a+rX ./data/cratesio_dump
+
+    # 过滤不兼容项：transaction_timeout 参数与 crunchy_pooler 扩展
+    if [ -f ./data/cratesio_dump/schema.sql ]; then
+        if grep -q "transaction_timeout" ./data/cratesio_dump/schema.sql; then
+            print_warning "检测到 schema.sql 中存在 transaction_timeout，执行过滤..."
+            sed -i '/transaction_timeout/Id' ./data/cratesio_dump/schema.sql || true
+        fi
+        if grep -qi "crunchy_pooler" ./data/cratesio_dump/schema.sql; then
+            print_warning "检测到 schema.sql 中存在 crunchy_pooler 扩展，执行过滤..."
+            sed -i '/crunchy_pooler/Id' ./data/cratesio_dump/schema.sql || true
+        fi
+        if grep -qi "pgaudit" ./data/cratesio_dump/schema.sql; then
+            print_warning "检测到 schema.sql 中存在 pgaudit 扩展，执行过滤..."
+            sed -i '/pgaudit/Id' ./data/cratesio_dump/schema.sql || true
+        fi
+    fi
+
+    print_info "启动 Postgres 并自动执行初始化脚本导入..."
+        docker compose up -d postgres
+
+    print_info "等待导入完成（检测日志标记）..."
+    # 最长等待 30 分钟（每2秒检查一次）
+    local max_checks=900
+    local ok=0
+    for i in $(seq 1 $max_checks); do
+        if docker compose logs --tail=200 postgres | grep -q "\[init-cratesio\] Import completed successfully."; then
+            ok=1
+            break
+        fi
+        sleep 2
+    done
+
+    if [ "$ok" = "1" ]; then
+        print_success "数据库导入完成！"
+        print_info "验证数据库连接..."
+        if command -v psql &> /dev/null; then
+            PGPASSWORD=$PG_PASSWORD psql -h ${PG_HOST%:*} -p ${PG_HOST#*:} -U $PG_USER -d $PG_DATABASE -c "SELECT NOW();" || true
+        else
+            docker compose exec -T cratesio-db sh -lc "psql -U '$PG_USER' -d '$PG_DATABASE' -c 'SELECT NOW();'" || true
+        fi
+        print_success "一键导入完成。"
+    else
+        print_warning "未在预期时间内检测到完成标记，请使用 'docker compose logs -f postgres' 查看导入进度。"
+        return 1
     fi
 }
 
@@ -198,41 +355,34 @@ clean_up() {
 main() {
     check_docker
     
-    case "${1:-help}" in
-        "build")
-            create_directories
-            build_image
-            ;;
-        "run")
-            shift
-            run_command "$@"
-            ;;
-        "shell")
-            enter_shell
-            ;;
-        "logs")
-            show_logs
-            ;;
-        "stop")
-            stop_containers
-            ;;
-        "clean")
-            clean_up
-            ;;
-        "test-db")
-            test_database
-            ;;
-        "help"|"--help"|"-h")
-            show_help
-            ;;
+    case "$1" in
+        build)
+            build_image ;;
+        run)
+            shift; run_command "$@" ;;
+        shell)
+            enter_shell ;;
+        logs)
+            show_logs ;;
+        stop)
+            stop_containers ;;
+        clean)
+            clean_up ;;
+        test-db)
+            test_database ;;
+        db-up)
+            db_up ;;
+        db-down)
+            db_down ;;
+        db-reset)
+            db_reset ;;
+        db-import)
+            db_import ;;
+        db-oneclick)
+            db_oneclick ;;
         *)
-            print_error "未知命令: $1"
-            echo ""
-            show_help
-            exit 1
-            ;;
+            show_help ;;
     esac
 }
 
-# 运行主函数
 main "$@"

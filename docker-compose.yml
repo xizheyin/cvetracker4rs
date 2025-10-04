@@ -1,4 +1,4 @@
-version: '2.2'
+
 
 services:
   cvetracker4rs:
@@ -45,25 +45,33 @@ services:
 
     # Default command (can be overridden)
     command: [ "cvetracker4rs", "--help" ]
-  # 注意：使用主机PostgreSQL数据库，不需要单独的数据库容器
-  # 如果需要独立的数据库容器，可以取消注释以下配置：
-  # postgres:
-  #   image: postgres:15
-  #   container_name: cvetracker-db
-  #   environment:
-  #     POSTGRES_DB: crates_io
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: 123
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
-  #   restart: unless-stopped
+  # 使用独立的数据库容器，自动下载并导入 crates.io dump
+  postgres:
+    image: postgres:17
+    container_name: cratesio-db
+    user: "root"
+    environment:
+      POSTGRES_DB: ${PG_DATABASE:-crates_io}
+      POSTGRES_USER: ${PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/cratesio_dump:/docker-entrypoint-initdb.d/dump
+      - ./scripts/init-cratesio.sh:/docker-entrypoint-initdb.d/01-init-cratesio.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-postgres} -d ${PG_DATABASE:-crates_io}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    network_mode: host
 
   # 使用host网络模式时不需要自定义网络
   # networks:
   #   cvetracker-network:
   #     driver: bridge
 
-  # volumes:
-  #   postgres_data:
+volumes:
+  postgres_data:
