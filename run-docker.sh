@@ -45,7 +45,7 @@ check_docker() {
 # 创建必要的目录
 create_directories() {
     print_info "创建必要的目录..."
-    mkdir -p analysis_results logs data/downloads data/working
+    mkdir -p analysis_results logs logs_cg4rs data/downloads data/working
     print_success "目录创建完成"
 }
 
