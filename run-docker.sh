@@ -62,10 +62,18 @@ ensure_env() {
     fi
 }
 
+# 设置用户权限环境变量
+setup_user_env() {
+    export USER_ID=$(id -u)
+    export GROUP_ID=$(id -g)
+    print_info "检测到当前用户权限: UID=$USER_ID, GID=$GROUP_ID"
+}
+
 # 构建Docker镜像
 build_image() {
     print_info "构建 Docker 镜像..."
     
+    setup_user_env
     export DOCKER_BUILDKIT=1 
     docker compose build --progress plain
     
@@ -153,6 +161,7 @@ show_help() {
 # 运行命令
 run_command() {
     create_directories
+    setup_user_env
     
     # 检查是否有-it参数
     local docker_args="--rm"
@@ -184,6 +193,7 @@ run_command() {
 # 进入shell
 enter_shell() {
     create_directories
+    setup_user_env
     print_info "进入容器 shell..."
     docker compose run --rm cvetracker4rs /bin/bash
 }
