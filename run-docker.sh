@@ -74,9 +74,7 @@ build_image() {
     print_info "构建 Docker 镜像..."
     
     setup_user_env
-    export DOCKER_BUILDKIT=1 
-    docker compose build --progress plain
-    
+    docker compose build
     if [ $? -eq 0 ]; then
         print_success "镜像构建完成"
     else
@@ -225,24 +223,24 @@ clean_up() {
 
 
 
-# 直接启动 postgres（若 ./data/cratesio_dump 已有 dump，首次启动将自动导入）
+# 直接启动 postgres-crates-io 服务（若 ./data/cratesio_dump 已有 dump，首次启动将自动导入）
 db_up() {
     create_directories
-    print_info "启动 postgres 服务..."
-    docker compose up -d postgres
-    print_success "服务已启动：postgres"
+    print_info "启动 postgres-crates-io 服务..."
+    docker compose up -d postgres-crates-io
+    print_success "服务已启动：postgres-crates-io"
 }
 
-# 直接停止 postgres 服务
+# 直接停止 postgres-crates-io 服务
 db_down() {
-    print_info "停止 postgres 服务..."
+    print_info "停止 postgres-crates-io 服务...（包括cvetracker4rs服务）"
     docker compose down -v
-    print_success "服务已停止：postgres"
+    print_success "服务已停止：postgres-crates-io"
 }
 
 # 重置数据库（删除数据卷并重新初始化，适合重新导入最新 dump，需先准备 ./data/cratesio_dump）
 db_reset() {
-    print_warning "将删除 postgres 数据卷并停止服务，所有数据会丢失。确定吗？(y/N)"
+    print_warning "将删除 postgres-crates-io 数据卷并停止服务，所有数据会丢失。确定吗？(y/N)"
     read -r reply
     if [[ ! "$reply" =~ ^([yY][eE][sS]|[yY])$ ]]; then
         print_info "已取消重置。"
@@ -251,8 +249,8 @@ db_reset() {
     print_info "停止并删除容器与卷..."
     docker compose down -v
     print_info "重新启动导入流程（首次启动将自动执行初始化脚本）..."
-    docker compose up -d postgres
-    print_success "已重置并重新启动。请通过 'docker compose logs -f postgres' 观察初始化日志。"
+    docker compose up -d postgres-crates-io
+    print_success "已重置并重新启动。请通过 'docker compose logs -f postgres-crates-io' 观察初始化日志。"
 }
 
 # 强制执行导入（适用于已存在数据目录的情况，直接在容器内执行 psql）
@@ -332,17 +330,24 @@ db_oneclick() {
     fi
 
     print_info "启动 Postgres 并自动执行初始化脚本导入..."
-        docker compose up -d postgres
+        docker compose up -d postgres-crates-io
 
     print_info "等待导入完成（检测日志标记）..."
     # 最长等待 30 分钟（每2秒检查一次）
     local max_checks=900
     local ok=0
     for i in $(seq 1 $max_checks); do
-        if docker compose logs --tail=200 postgres | grep -q "\[init-cratesio\] Import completed successfully."; then
+        logs=$(docker compose logs --tail=200 postgres-crates-io)
+        if echo "$logs" | grep -q "\[init-cratesio\] Import completed successfully."; then
             ok=1
             break
         fi
+        if echo "$logs" | grep -q "Skipping initialization"; then
+            print_error "数据库已存在，跳过了初始化。脚本无法继续。请先运行 './run-docker.sh db-reset' 或手动清理数据卷后再试。"
+            ok=-1
+            break
+        fi
+        print_info "等待导入... ($i/$max_checks)"
         sleep 2
     done
 
@@ -355,8 +360,10 @@ db_oneclick() {
             docker compose exec -T cratesio-db sh -lc "psql -U '$PG_USER' -d '$PG_DATABASE' -c 'SELECT NOW();'" || true
         fi
         print_success "一键导入完成。"
+    elif [ "$ok" = "-1" ]; then
+        return 1
     else
-        print_warning "未在预期时间内检测到完成标记，请使用 'docker compose logs -f postgres' 查看导入进度。"
+        print_warning "未在预期时间内检测到完成标记，请使用 'docker compose logs -f postgres-crates-io' 查看导入进度。"
         return 1
     fi
 }
