@@ -1,5 +1,4 @@
 use crate::model::Krate;
-use crate::process::graceful_kill_process;
 use anyhow::Result;
 
 use serde_json;
@@ -91,9 +90,7 @@ pub(crate) async fn run_function_analysis(
             exit.map_err(|e| anyhow::anyhow!(e))
         }
         _ = sleep(Duration::from_secs(240)) => {
-            warn!("call-cg4rs analysis timeout (4 minutes), attempting graceful shutdown");
-            // 使用优雅终止：先 SIGTERM，10秒后如果还没退出则 SIGKILL
-            let _ = graceful_kill_process(&mut child, 10).await;
+            warn!("call-cg4rs analysis timeout (4 minutes), will shutdown");
             Err(anyhow::anyhow!("call-cg4rs analysis timeout (4 minutes), process terminated"))
         }
     };
