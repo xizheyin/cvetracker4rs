@@ -154,7 +154,7 @@ Docker容器配置了以下资源限制：
 docker-compose build
 
 # 运行特定命令
-docker-compose run --rm cvetracker4rs run_from_csv --input /app/csv/merged.csv
+docker-compose run --rm cvetracker4rs run_from_csv /app/csv/merged.csv
 
 # 后台运行
 docker-compose up -d
