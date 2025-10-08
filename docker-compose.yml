@@ -48,7 +48,7 @@ services:
     # Default command (can be overridden)
     command: [ "cvetracker4rs", "--help" ]
   # 使用独立的数据库容器，自动下载并导入 crates.io dump
-  postgres:
+  postgres-crates-io:
     image: postgres:17
     container_name: cratesio-db
     user: "root"
@@ -69,10 +69,6 @@ services:
       retries: 20
     restart: unless-stopped
     network_mode: host
-  # 使用host网络模式时不需要自定义网络
-  # networks:
-  #   cvetracker-network:
-  #     driver: bridge
 
 volumes:
   postgres_data:
