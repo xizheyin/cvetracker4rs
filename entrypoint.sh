@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Add Rust libraries to the dynamic linker path for tools like cg4rs
+export LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
+
 # 修复卷映射目录的权限
 echo "正在修复目录权限..."
 
