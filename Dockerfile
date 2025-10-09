@@ -2,7 +2,7 @@
 # Use official Rust image as base
 FROM rust:1.75-bookworm
 
-# Install system dependencies
+# 安装系统依赖（新增 libssl-dev、pkg-config、build-essential）
 RUN apt-get update && apt-get install -y \
     curl \
     tar \
@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     tzdata \
     libssl3 \
     libpq5 \
+    libssl-dev \
+    pkg-config \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -53,6 +56,7 @@ RUN groupadd -g ${GROUP_ID} appuser && \
     useradd -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash appuser && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+COPY rust-toolchain.toml /home/appuser/.cargo/
 # Finally, Copy env first
 COPY .env .
 
@@ -62,7 +66,7 @@ RUN chmod +x /entrypoint.sh
 
 # Create necessary directories and set ownership BEFORE switching to non-root user
 RUN mkdir -p /data/downloads /data/working /app/logs /app/logs_cg4rs /app/analysis_results && \
-    chown -R appuser:appuser /app /data
+    chown -R appuser:appuser /app /data /usr/local/cargo
 
 # Switch to non-root user
 USER appuser
