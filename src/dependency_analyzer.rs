@@ -229,7 +229,9 @@ impl DependencyAnalyzer {
                 parent.krate.version
             );
 
-            utils::patch_dep(
+            // Vendor the exact parent version locally and patch Cargo.toml to use it.
+            // This ensures yanked versions remain resolvable and builds are deterministic/offline.
+            utils::vendor_and_patch_dep(
                 &working_src_code_dir,
                 &parent.krate.name,
                 &parent.krate.version,
@@ -237,7 +239,7 @@ impl DependencyAnalyzer {
             .await
             .map_err(|e| {
                 anyhow::anyhow!(
-                    "Failed to patch dependency in {}: {}",
+                    "Failed to vendor & patch dependency in {}: {}",
                     working_src_code_dir.display(),
                     e
                 )
