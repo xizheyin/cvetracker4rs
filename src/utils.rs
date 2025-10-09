@@ -3,7 +3,8 @@ use futures::stream::{self as futures_stream, StreamExt};
 use semver::{Version, VersionReq};
 use std::{collections::VecDeque, path::Path};
 use tokio::fs as tokio_fs;
-use toml_edit::{value, DocumentMut};
+use tokio::process::Command;
+use toml_edit::DocumentMut;
 
 use crate::{
     database::Database,
@@ -147,13 +148,175 @@ pub(crate) async fn push_next_level<T>(queue: &mut VecDeque<T>, next_nodes: Vec<
     tracing::info!("BFS push next level, {} nodes", count);
 }
 
-/// patch the target crate's Cargo.toml, lock the parent dependency to the specified version
-pub async fn patch_dep(
+// /// patch the target crate's Cargo.toml, lock the parent dependency to the specified version
+// pub async fn patch_dep(
+//     crate_dir: &Path,
+//     dep_name: &str,
+//     dep_version: &str,
+// ) -> anyhow::Result<String> {
+//     tracing::debug!("Patch the dependency: {} to {}", dep_name, dep_version);
+//     let cargo_toml_path = crate_dir.join("Cargo.toml");
+//     let original_content = tokio_fs::read_to_string(&cargo_toml_path)
+//         .await
+//         .map_err(|e| anyhow::anyhow!("Failed to read {:?}: {}", cargo_toml_path, e))?;
+
+//     let mut doc = original_content
+//         .parse::<DocumentMut>()
+//         .context("Failed to parse Cargo.toml")?;
+
+//     let version_str = format!("={}", dep_version);
+
+//     // set the dependency with comment
+//     let set_dep_with_comment = |table: &mut toml_edit::Table, key: &str, new_version: &str| {
+//         let item = table.get_mut(key);
+//         if let Some(item) = item {
+//             if let Some(inline_table) = item.as_table_mut() {
+//                 // 形如 foo = { version = "...", ... }
+//                 let old_version = inline_table
+//                     .get("version")
+//                     .and_then(|v| v.as_str())
+//                     .unwrap_or("")
+//                     .to_owned();
+//                 inline_table["version"] = value(new_version);
+//                 let comment = if old_version.is_empty() {
+//                     format!(
+//                         " auto lock the dependency version, from <none> to {}",
+//                         new_version
+//                     )
+//                 } else {
+//                     format!(
+//                         " auto lock the dependency version, from {} to {}",
+//                         old_version, new_version
+//                     )
+//                 };
+//                 inline_table
+//                     .decor_mut()
+//                     .set_suffix(format!(" #{}", comment));
+//             } else if let Some(val) = item.as_value_mut() {
+//                 // 形如 foo = "1.2.3"
+//                 let old_version = val.as_str().unwrap_or("").to_owned();
+//                 *val = toml_edit::Value::from(new_version);
+//                 let comment = if old_version.is_empty() {
+//                     format!(
+//                         " auto lock the dependency version, from <none> to {}",
+//                         new_version
+//                     )
+//                 } else {
+//                     format!(
+//                         " auto lock the dependency version, from {} to {}",
+//                         old_version, new_version
+//                     )
+//                 };
+//                 val.decor_mut().set_suffix(format!(" #{}", comment));
+//             }
+//         }
+//     };
+
+//     // modify [dependencies]
+//     if let Some(table) = doc["dependencies"].as_table_mut() {
+//         set_dep_with_comment(table, dep_name, &version_str);
+//     }
+//     // modify [dev-dependencies]
+//     if let Some(table) = doc["dev-dependencies"].as_table_mut() {
+//         if table.contains_key(dep_name) {
+//             set_dep_with_comment(table, dep_name, &version_str);
+//         }
+//     }
+//     // modify [build-dependencies]
+//     if let Some(table) = doc["build-dependencies"].as_table_mut() {
+//         if table.contains_key(dep_name) {
+//             set_dep_with_comment(table, dep_name, &version_str);
+//         }
+//     }
+
+//     tokio_fs::write(&cargo_toml_path, doc.to_string())
+//         .await
+//         .context("Failed to write back Cargo.toml")?;
+
+//     Ok(original_content)
+// }
+
+/// Ensure a vendored copy of the specified dependency exists under
+/// `<crate_dir>/vendor/<dep_name>-<dep_version>` and add a [patch.crates-io]
+/// entry in Cargo.toml to use the local path. This avoids resolver issues
+/// with yanked versions while keeping builds offline-capable.
+pub async fn vendor_and_patch_dep(
     crate_dir: &Path,
     dep_name: &str,
     dep_version: &str,
 ) -> anyhow::Result<String> {
-    tracing::debug!("Patch the dependency: {} to {}", dep_name, dep_version);
+    let vendor_root = crate_dir.join("vendor");
+    let vendor_dir = vendor_root.join(format!("{}-{}", dep_name, dep_version));
+    let vendor_cargo = vendor_dir.join("Cargo.toml");
+
+    // Prepare vendor directory by downloading and extracting the crate
+    if !vendor_cargo.exists() {
+        tokio_fs::create_dir_all(&vendor_root)
+            .await
+            .context("Failed to create vendor directory")?;
+
+        // Download to a local archive inside vendor_root
+        let archive_path = vendor_root.join(format!("{}-{}.crate", dep_name, dep_version));
+        let download_url = format!(
+            "https://crates.io/api/v1/crates/{}/{}/download",
+            dep_name, dep_version
+        );
+
+        tracing::info!(
+            "Vendoring {}:{} -> {}",
+            dep_name,
+            dep_version,
+            vendor_dir.display()
+        );
+
+        // If archive missing, fetch it
+        if !archive_path.exists() {
+            let output = Command::new("curl")
+                .args(["-fL", &download_url, "-o", &archive_path.to_string_lossy()])
+                .output()
+                .await
+                .context("Failed to execute curl for vendoring")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(anyhow::anyhow!(
+                    "curl failed downloading {}:{}: {}",
+                    dep_name,
+                    dep_version,
+                    stderr
+                ));
+            }
+        }
+
+        // Extract into vendor_root (archive contains <name>-<version>/)
+        let output = Command::new("tar")
+            .args([
+                "-xzf",
+                &archive_path.to_string_lossy(),
+                "-C",
+                &vendor_root.to_string_lossy(),
+            ])
+            .output()
+            .await
+            .context("Failed to execute tar for vendoring")?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!(
+                "tar failed extracting {}: {}",
+                archive_path.display(),
+                stderr
+            ));
+        }
+
+        // Basic validation
+        if !vendor_cargo.exists() {
+            return Err(anyhow::anyhow!(
+                "Vendored crate missing Cargo.toml: {}",
+                vendor_dir.display()
+            ));
+        }
+    }
+
+    // Patch Cargo.toml to add [patch.crates-io] entry pointing to vendor path
     let cargo_toml_path = crate_dir.join("Cargo.toml");
     let original_content = tokio_fs::read_to_string(&cargo_toml_path)
         .await
@@ -163,74 +326,41 @@ pub async fn patch_dep(
         .parse::<DocumentMut>()
         .context("Failed to parse Cargo.toml")?;
 
-    let version_str = format!("={}", dep_version);
+    // Ensure [patch.crates-io]
+    let patch_table = doc
+        .entry("patch")
+        .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
+        .as_table_mut()
+        .unwrap()
+        .entry("crates-io")
+        .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
+        .as_table_mut()
+        .unwrap();
 
-    // set the dependency with comment
-    let set_dep_with_comment = |table: &mut toml_edit::Table, key: &str, new_version: &str| {
-        let item = table.get_mut(key);
-        if let Some(item) = item {
-            if let Some(inline_table) = item.as_table_mut() {
-                // 形如 foo = { version = "...", ... }
-                let old_version = inline_table
-                    .get("version")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_owned();
-                inline_table["version"] = value(new_version);
-                let comment = if old_version.is_empty() {
-                    format!(
-                        " auto lock the dependency version, from <none> to {}",
-                        new_version
-                    )
-                } else {
-                    format!(
-                        " auto lock the dependency version, from {} to {}",
-                        old_version, new_version
-                    )
-                };
-                inline_table
-                    .decor_mut()
-                    .set_suffix(format!(" #{}", comment));
-            } else if let Some(val) = item.as_value_mut() {
-                // 形如 foo = "1.2.3"
-                let old_version = val.as_str().unwrap_or("").to_owned();
-                *val = toml_edit::Value::from(new_version);
-                let comment = if old_version.is_empty() {
-                    format!(
-                        " auto lock the dependency version, from <none> to {}",
-                        new_version
-                    )
-                } else {
-                    format!(
-                        " auto lock the dependency version, from {} to {}",
-                        old_version, new_version
-                    )
-                };
-                val.decor_mut().set_suffix(format!(" #{}", comment));
-            }
-        }
-    };
-
-    // modify [dependencies]
-    if let Some(table) = doc["dependencies"].as_table_mut() {
-        set_dep_with_comment(table, dep_name, &version_str);
+    // Set dep_name = { path = "vendor/<name>-<version>" }
+    let mut inline = toml_edit::InlineTable::new();
+    inline.insert(
+        "path",
+        toml_edit::value(format!("vendor/{}-{}", dep_name, dep_version))
+            .into_value()
+            .unwrap(),
+    );
+    let mut item = toml_edit::Item::Value(toml_edit::Value::InlineTable(inline));
+    // Add a helpful comment
+    if let Some(val) = item.as_value_mut() {
+        val.decor_mut().set_suffix(format!(
+            " # auto use vendored {}:{} to avoid yanked resolution",
+            dep_name, dep_version
+        ));
     }
-    // modify [dev-dependencies]
-    if let Some(table) = doc["dev-dependencies"].as_table_mut() {
-        if table.contains_key(dep_name) {
-            set_dep_with_comment(table, dep_name, &version_str);
-        }
-    }
-    // modify [build-dependencies]
-    if let Some(table) = doc["build-dependencies"].as_table_mut() {
-        if table.contains_key(dep_name) {
-            set_dep_with_comment(table, dep_name, &version_str);
-        }
-    }
+    patch_table.insert(dep_name, item);
 
     tokio_fs::write(&cargo_toml_path, doc.to_string())
         .await
-        .context("Failed to write back Cargo.toml")?;
+        .context("Failed to write back Cargo.toml with [patch.crates-io]")?;
+
+    // // Finally, keep version pinned in [dependencies] as well (optional)
+    // let _ = patch_dep(crate_dir, dep_name, dep_version).await?;
 
     Ok(original_content)
 }
