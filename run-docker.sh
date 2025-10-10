@@ -29,6 +29,39 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 显示帮助信息
+show_help() {
+    echo "CVE Tracker 4 Rust - Docker 运行脚本"
+    echo ""
+    echo "使用方法:"
+    echo "  $0 build                    # 构建 Docker 镜像"
+    echo "  $0 run [command] [args...]  # 运行指定命令"
+    echo "  $0 shell                    # 进入容器 shell"
+    echo "  $0 logs                     # 查看容器日志"
+    echo "  $0 stop                     # 停止容器"
+    echo "  $0 clean                    # 清理容器和镜像"
+    echo "  $0 test-db                  # 测试数据库连接"
+    echo "  $0 db-up                    # 启动 postgres（若 ./data/cratesio_dump 中已有 dump，首次启动将自动导入）"
+    echo "  $0 db-down                  # 直接停止 postgres 服务"
+    echo "  $0 db-import                # 在容器内强制执行导入（覆盖风险，谨慎使用；需先准备 ./data/cratesio_dump）"
+    echo "  $0 db-reset                 # 删除数据卷并重新初始化（重新导入最新 dump；需先准备 ./data/cratesio_dump）"
+    echo "  $0 db-oneclick              # 一键下载并导入 crates.io 数据库（清空旧数据）"
+
+    echo ""
+    echo "可用的命令:"
+    echo "  cvetracker4rs [args...]     # 主程序"
+    echo "  run_from_csv [args...]      # 从CSV运行分析"
+    echo "  stats [args...]             # 统计工具"
+    echo "  callgraph4rs [args...]      # 调用图分析"
+    echo ""
+    echo "示例:"
+    echo "  $0 run cvetracker4rs --help"
+    echo "  $0 run run_from_csv --input /app/csv/merged.csv"
+    echo "  $0 run stats --help"
+}
+
+
+
 # 检查Docker是否安装
 check_docker() {
     if ! command -v docker &> /dev/null; then
@@ -83,78 +116,7 @@ build_image() {
     fi
 }
 
-# 测试数据库连接
-test_database() {
-    print_info "测试数据库连接..."
-    
-    # 检查.env文件是否存在
-    if [ ! -f ".env" ]; then
-        print_error ".env 文件不存在，请先配置数据库连接参数"
-        return 1
-    fi
-    
-    # 从.env文件读取数据库配置
-    source .env
-    
-    print_info "数据库配置:"
-    echo "  主机: $PG_HOST"
-    echo "  用户: $PG_USER"
-    echo "  数据库: $PG_DATABASE"
-    
-    # 使用psql测试连接（如果可用）
-    if command -v psql &> /dev/null; then
-        print_info "使用 psql 测试连接..."
-        PGPASSWORD=$PG_PASSWORD psql -h ${PG_HOST%:*} -p ${PG_HOST#*:} -U $PG_USER -d $PG_DATABASE -c "SELECT version();" 2>/dev/null
-        if [ $? -eq 0 ]; then
-            print_success "数据库连接测试成功！"
-        else
-            print_error "数据库连接测试失败，请检查配置和数据库状态"
-        fi
-    else
-        print_warning "psql 未安装，跳过直接连接测试"
-        print_info "将在Docker容器中测试连接..."
-        
-        # 在容器中测试连接
-        create_directories
-        docker compose run --rm cvetracker4rs /bin/bash -c "
-            echo 'Testing database connection...'
-            echo 'Host: $PG_HOST'
-            echo 'User: $PG_USER'
-            echo 'Database: $PG_DATABASE'
-        "
-    fi
-}
 
-# 显示帮助信息
-show_help() {
-    echo "CVE Tracker 4 Rust - Docker 运行脚本"
-    echo ""
-    echo "使用方法:"
-    echo "  $0 build                    # 构建 Docker 镜像"
-    echo "  $0 run [command] [args...]  # 运行指定命令"
-    echo "  $0 shell                    # 进入容器 shell"
-    echo "  $0 logs                     # 查看容器日志"
-    echo "  $0 stop                     # 停止容器"
-    echo "  $0 clean                    # 清理容器和镜像"
-    echo "  $0 test-db                  # 测试数据库连接"
-    echo "  $0 db-up                    # 启动 postgres（若 ./data/cratesio_dump 中已有 dump，首次启动将自动导入）"
-    echo "  $0 db-down                  # 直接停止 postgres 服务"
-    echo "  $0 db-import                # 在容器内强制执行导入（覆盖风险，谨慎使用；需先准备 ./data/cratesio_dump）"
-    echo "  $0 db-reset                 # 删除数据卷并重新初始化（重新导入最新 dump；需先准备 ./data/cratesio_dump）"
-    echo "  $0 db-oneclick              # 一键下载并导入 crates.io 数据库（清空旧数据）"
-
-    echo ""
-    echo "可用的命令:"
-    echo "  cvetracker4rs [args...]     # 主程序"
-    echo "  run_from_csv [args...]      # 从CSV运行分析"
-    echo "  stats [args...]             # 统计工具"
-    echo "  callgraph4rs [args...]      # 调用图分析"
-    echo ""
-    echo "示例:"
-    echo "  $0 run cvetracker4rs --help"
-    echo "  $0 run run_from_csv --input /app/csv/merged.csv"
-    echo "  $0 run stats --help"
-}
 
 # 运行命令
 run_command() {
@@ -221,6 +183,48 @@ clean_up() {
     fi
 }
 
+
+# 测试数据库连接
+test_database() {
+    print_info "测试数据库连接..."
+    
+    # 检查.env文件是否存在
+    if [ ! -f ".env" ]; then
+        print_error ".env 文件不存在，请先配置数据库连接参数"
+        return 1
+    fi
+    
+    # 从.env文件读取数据库配置
+    source .env
+    
+    print_info "数据库配置:"
+    echo "  主机: $PG_HOST"
+    echo "  用户: $PG_USER"
+    echo "  数据库: $PG_DATABASE"
+    
+    # 使用psql测试连接（如果可用）
+    if command -v psql &> /dev/null; then
+        print_info "使用 psql 测试连接..."
+        PGPASSWORD=$PG_PASSWORD psql -h ${PG_HOST%:*} -p ${PG_HOST#*:} -U $PG_USER -d $PG_DATABASE -c "SELECT version();" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            print_success "数据库连接测试成功！"
+        else
+            print_error "数据库连接测试失败，请检查配置和数据库状态"
+        fi
+    else
+        print_warning "psql 未安装，跳过直接连接测试"
+        print_info "将在Docker容器中测试连接..."
+        
+        # 在容器中测试连接
+        create_directories
+        docker compose run --rm cvetracker4rs /bin/bash -c "
+            echo 'Testing database connection...'
+            echo 'Host: $PG_HOST'
+            echo 'User: $PG_USER'
+            echo 'Database: $PG_DATABASE'
+        "
+    fi
+}
 
 
 # 直接启动 postgres-crates-io 服务（若 ./data/cratesio_dump 已有 dump，首次启动将自动导入）
