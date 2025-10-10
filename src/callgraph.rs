@@ -65,12 +65,14 @@ pub(crate) async fn run_function_analysis(
         src_dir.display()
     );
 
+    let callgraph4rs_log_flag = std::env::var("CG_RUST_LOG").unwrap_or("info".to_string());
     let (log_file, error_output_file) = crate::logger::create_log_file(&logs_dir, krate)
         .await
         .unwrap();
 
     let mut child = Command::new("call-cg4rs")
-        .env("RUST_LOG", "info")
+        .env("RUST_LOG", &callgraph4rs_log_flag)
+        .env("RUST_BACKTRACE", "1")
         .args([
             "--find-callers",
             function_paths,
