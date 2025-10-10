@@ -60,9 +60,9 @@ COPY rust-toolchain.toml /home/appuser/.cargo/
 # Finally, Copy env first
 COPY .env .
 
-# Copy entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# # Copy entrypoint script
+# COPY entrypoint.sh /entrypoint.sh
+# RUN chmod +x /entrypoint.sh
 
 # Create necessary directories and set ownership BEFORE switching to non-root user
 RUN mkdir -p /data/downloads /data/working /app/logs /app/logs_cg4rs /app/analysis_results && \
@@ -77,5 +77,5 @@ USER appuser
 EXPOSE 8080
 
 # Set entrypoint and default command
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
 CMD ["cvetracker4rs"]
