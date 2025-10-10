@@ -24,7 +24,6 @@ services:
 
     # Environment variables
     environment:
-      - RUST_LOG=info
       - DOWNLOAD_DIR=/data/downloads
       - WORKING_DIR=/data/working
       # PostgreSQL connection settings
